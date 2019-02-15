@@ -4,64 +4,62 @@
 Mesh generateBox(float width, float height, float depth, bool flipFaces) {
     // Hardcoded. Sue me.
 
+    // Edit: well, that backfired..
+
     std::vector<glm::vec3> vertices = {
             {0, 0, 0},
+            {0, height, depth},
             {0, 0, depth},
-            {0, height, depth},
-
-            {0, 0, 0},
-            {0, height, depth},
-            {0, height, 0},
-
-            {width, 0, 0},
-            {width, height, 0},
-            {width, height, depth},
-
-            {width, 0, 0},
-            {width, height, depth},
-            {width, 0, depth},
-
-            {0, 0, 0},
-            {width, height, 0},
-            {width, 0, 0},
 
             {0, 0, 0},
             {0, height, 0},
+            {0, height, depth},
+
+            {width, 0, 0},
+            {width, height, depth},
             {width, height, 0},
 
-            {0, 0, depth},
+            {width, 0, 0},
             {width, 0, depth},
             {width, height, depth},
-
-            {0, 0, depth},
-            {width, height, depth},
-            {0, height, depth},
 
             {0, 0, 0},
             {width, 0, 0},
+            {width, height, 0},
+
+            {0, 0, 0},
+            {width, height, 0},
+            {0, height, 0},
+
+            {0, 0, depth},
+            {width, height, depth},
             {width, 0, depth},
+
+            {0, 0, depth},
+            {0, height, depth},
+            {width, height, depth},
 
             {0, 0, 0},
             {width, 0, depth},
+            {width, 0, 0},
+
+            {0, 0, 0},
             {0, 0, depth},
+            {width, 0, depth},
 
             {width, height, 0},
+            {0, height, depth},
             {0, height, 0},
-            {0, height, depth},
 
             {width, height, 0},
-            {0, height, depth},
-            {width, height, depth}};
+            {width, height, depth},
+            {0, height, depth}};
+
+    // These are technically inverted relative to the vertex coordinates.
+    // But for some strange reason the faces are rendered inverted.
+    // So to make the assignment work this is the best I can do.
 
     std::vector<glm::vec3> normals = {
-            {-1.0, 0.0, 0.0},
-            {-1.0, 0.0, 0.0},
-            {-1.0, 0.0, 0.0},
-
-            {-1.0, 0.0, 0.0},
-            {-1.0, 0.0, 0.0},
-            {-1.0, 0.0, 0.0},
-
             {1.0, 0.0, 0.0},
             {1.0, 0.0, 0.0},
             {1.0, 0.0, 0.0},
@@ -70,21 +68,21 @@ Mesh generateBox(float width, float height, float depth, bool flipFaces) {
             {1.0, 0.0, 0.0},
             {1.0, 0.0, 0.0},
 
-            {0.0, -1.0, 0.0},
-            {0.0, -1.0, 0.0},
-            {0.0, -1.0, 0.0},
+            {-1.0, 0.0, 0.0},
+            {-1.0, 0.0, 0.0},
+            {-1.0, 0.0, 0.0},
 
-            {0.0, -1.0, 0.0},
-            {0.0, -1.0, 0.0},
-            {0.0, -1.0, 0.0},
+            {-1.0, 0.0, 0.0},
+            {-1.0, 0.0, 0.0},
+            {-1.0, 0.0, 0.0},
 
-            {0.0, 1.0, 0.0},
-            {0.0, 1.0, 0.0},
-            {0.0, 1.0, 0.0},
+            {0.0, 0.0, 1.0},
+            {0.0, 0.0, 1.0},
+            {0.0, 0.0, 1.0},
 
-            {0.0, 1.0, 0.0},
-            {0.0, 1.0, 0.0},
-            {0.0, 1.0, 0.0},
+            {0.0, 0.0, 1.0},
+            {0.0, 0.0, 1.0},
+            {0.0, 0.0, 1.0},
 
             {0.0, 0.0, -1.0},
             {0.0, 0.0, -1.0},
@@ -94,13 +92,21 @@ Mesh generateBox(float width, float height, float depth, bool flipFaces) {
             {0.0, 0.0, -1.0},
             {0.0, 0.0, -1.0},
 
-            {0.0, 0.0, 1.0},
-            {0.0, 0.0, 1.0},
-            {0.0, 0.0, 1.0},
+            {0.0, 1.0, 0.0},
+            {0.0, 1.0, 0.0},
+            {0.0, 1.0, 0.0},
 
-            {0.0, 0.0, 1.0},
-            {0.0, 0.0, 1.0},
-            {0.0, 0.0, 1.0},
+            {0.0, 1.0, 0.0},
+            {0.0, 1.0, 0.0},
+            {0.0, 1.0, 0.0},
+
+            {0.0, -1.0, 0.0},
+            {0.0, -1.0, 0.0},
+            {0.0, -1.0, 0.0},
+
+            {0.0, -1.0, 0.0},
+            {0.0, -1.0, 0.0},
+            {0.0, -1.0, 0.0},
     };
 
     std::vector<unsigned int> indices = {
