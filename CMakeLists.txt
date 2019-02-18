@@ -43,6 +43,7 @@ add_subdirectory(lib/SFML)
 include_directories (src/
                      lib/glad/include/
                      lib/glfw/include/
+                     lib/lodepng/
                      lib/glm/
                      lib/stb/
                      lib/arrrgh/
@@ -51,7 +52,8 @@ include_directories (src/
 #
 # Add files
 #
-file (GLOB         VENDORS_SOURCES lib/glad/src/glad.c)
+file (GLOB         VENDORS_SOURCES lib/glad/src/glad.c
+								   lib/lodepng/lodepng.cpp)
 file (GLOB_RECURSE PROJECT_HEADERS src/*.hpp
                                    src/*.h)
 file (GLOB_RECURSE PROJECT_SOURCES src/*.cpp

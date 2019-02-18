@@ -25,3 +25,6 @@
 [submodule "arrrgh"]
 	path = arrrgh
 	url = https://github.com/ElectricToy/arrrgh.git
+[submodule "lib/lodepng"]
+	path = lib/lodepng
+	url = https://github.com/lvandeve/lodepng

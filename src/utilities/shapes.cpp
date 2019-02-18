@@ -7,53 +7,54 @@ Mesh generateBox(float width, float height, float depth, bool flipFaces) {
     // Edit: well, that backfired..
 
     std::vector<glm::vec3> vertices = {
-            {0, 0, 0},
-            {0, height, depth},
-            {0, 0, depth},
+            {0,     0,      0},
+            {0,     0,      depth},
+            {0,     height, depth},
 
-            {0, 0, 0},
-            {0, height, 0},
-            {0, height, depth},
+            {0,     0,      0},
+            {0,     height, depth},
+            {0,     height, 0},
 
-            {width, 0, 0},
+            {width, 0,      0},
             {width, height, depth},
-            {width, height, 0},
+            {width, 0,      depth},
 
-            {width, 0, 0},
-            {width, 0, depth},
-            {width, height, depth},
-
-            {0, 0, 0},
-            {width, 0, 0},
-            {width, height, 0},
-
-            {0, 0, 0},
-            {width, height, 0},
-            {0, height, 0},
-
-            {0, 0, depth},
-            {width, height, depth},
-            {width, 0, depth},
-
-            {0, 0, depth},
-            {0, height, depth},
-            {width, height, depth},
-
-            {0, 0, 0},
-            {width, 0, depth},
-            {width, 0, 0},
-
-            {0, 0, 0},
-            {0, 0, depth},
-            {width, 0, depth},
-
-            {width, height, 0},
-            {0, height, depth},
-            {0, height, 0},
-
+            {width, 0,      0},
             {width, height, 0},
             {width, height, depth},
-            {0, height, depth}};
+
+            {0,     0,      0},
+            {width, height, 0},
+            {width, 0,      0},
+
+            {0,     0,      0},
+            {0,     height, 0},
+            {width, height, 0},
+
+            {0,     0,      depth},
+            {width, 0,      depth},
+            {width, height, depth},
+
+            {0,     0,      depth},
+            {width, height, depth},
+            {0,     height, depth},
+
+            {0,     0,      0},
+            {width, 0,      0},
+            {width, 0,      depth},
+
+            {0,     0,      0},
+            {width, 0,      depth},
+            {0,     0,      depth},
+
+            {width, height, 0},
+            {0,     height, 0},
+            {0,     height, depth},
+
+            {width, height, 0},
+            {0,     height, depth},
+            {width, height, depth},
+    };
 
     // These are technically inverted relative to the vertex coordinates.
     // But for some strange reason the faces are rendered inverted.
@@ -109,6 +110,62 @@ Mesh generateBox(float width, float height, float depth, bool flipFaces) {
             {0.0, -1.0, 0.0},
     };
 
+    float texScaleFactorX = depth / height;
+    float texScaleFactorY = width / depth;
+    float texScaleFactorZ = width / height;
+    
+    std::vector<glm::vec2> textureCoordinates = {
+            {0, 0},
+            {texScaleFactorX, 0},
+            {texScaleFactorX, 1},
+
+            {0, 0},
+            {texScaleFactorX, 1},
+            {0, 1},
+
+            {0, 0},
+            {texScaleFactorX, 1},
+            {texScaleFactorX, 0},
+
+            {0, 0},
+            {0, 1},
+            {texScaleFactorX, 1},
+
+            {0, 0},
+            {texScaleFactorZ, 0},
+            {texScaleFactorZ, 1},
+
+            {0, 0},
+            {texScaleFactorZ, 1},
+            {0, 1},
+
+            {0, 0},
+            {texScaleFactorZ, 0},
+            {texScaleFactorZ, 1},
+
+            {0, 0},
+            {texScaleFactorZ, 1},
+            {0, 1},
+
+            {0, 0},
+            {texScaleFactorY, 0},
+            {texScaleFactorY, 1},
+
+            {0, 0},
+            {texScaleFactorY, 1},
+            {0, 1},
+
+            {0, 0},
+            {texScaleFactorY, 0},
+            {texScaleFactorY, 1},
+
+            {0, 0},
+            {texScaleFactorY, 1},
+            {0, 1},
+
+    };
+
+
     std::vector<unsigned int> indices = {
             0, 1, 2,
             3, 4, 5,
@@ -139,6 +196,7 @@ Mesh generateBox(float width, float height, float depth, bool flipFaces) {
     Mesh mesh;
     mesh.vertices = vertices;
     mesh.normals = normals;
+    mesh.textureCoordinates = textureCoordinates;
     mesh.indices = indices;
 
     return mesh;

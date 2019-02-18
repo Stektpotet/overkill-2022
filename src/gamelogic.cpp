@@ -99,8 +99,8 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
     shader->activate();
 
-    Mesh box = generateBox(boxDimensions.x, boxDimensions.y, boxDimensions.z, false);
-    Mesh pad = generateBox(padDimensions.x, padDimensions.y, padDimensions.z, true);
+    Mesh box = generateBox(boxDimensions.x, boxDimensions.y, boxDimensions.z, true);
+    Mesh pad = generateBox(padDimensions.x, padDimensions.y, padDimensions.z, false);
     Mesh sphere = generateSphere(1.0, 40, 40);
 
     unsigned int ballVAO = generateBuffer(sphere);
