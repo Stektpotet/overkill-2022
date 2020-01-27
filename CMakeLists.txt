@@ -5,6 +5,11 @@ cmake_minimum_required (VERSION 3.0)
 project (glowbox)
 
 #
+# Set python 3 name
+#
+set (PYTHON_3 "python")
+
+#
 # CMake setup
 #
 set (CMAKE_CXX_STANDARD 17)
@@ -36,6 +41,27 @@ option (SFML_BUILD_GRAPHICS OFF)
 option (SFML_BUILD_WINDOW OFF)
 option (SFML_BUILD_NETWORK OFF)
 add_subdirectory(lib/SFML)
+
+#
+# GLAD
+#
+if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/lib/glad/include)
+    message("Generating glad library files")
+    execute_process(COMMAND ${PYTHON_3} ${CMAKE_CURRENT_SOURCE_DIR}/lib/verify_version.py OUTPUT_VARIABLE PY_VER)
+    string(REGEX REPLACE "\n$" "" PY_VER "${PY_VER}")
+    if (PY_VER)
+		execute_process(
+			COMMAND python -m glad --profile core --out-path . --generator c --spec gl
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/glad
+		)
+    else()
+		execute_process(
+			COMMAND python3 -m glad --profile core --out-path . --generator c --spec gl
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/glad
+		)
+    endif()
+	message("Finished generating glad library files")
+endif()
 
 #
 # Set include paths
