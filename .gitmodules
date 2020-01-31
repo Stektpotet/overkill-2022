@@ -28,3 +28,6 @@
 [submodule "lib/lodepng"]
 	path = lib/lodepng
 	url = https://github.com/lvandeve/lodepng
+[submodule "lib/fmt"]
+	path = lib/fmt
+	url = https://github.com/fmtlib/fmt.git

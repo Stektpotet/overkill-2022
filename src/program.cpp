@@ -24,6 +24,9 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
     // Configure miscellaneous OpenGL settings
     glEnable(GL_CULL_FACE);
 
+    // Disable built-in dithering
+    glDisable(GL_DITHER);
+
     // Set default colour after clearing the colour buffer
     glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
 
@@ -38,7 +41,6 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
 
         updateFrame(window);
         renderFrame(window);
-
 
 
 

@@ -1,31 +1,34 @@
 #include <glad/glad.h>
 #include <program.hpp>
 #include "glutils.h"
+#include <vector>
+
+template <class T>
+unsigned int generateAttribute(int id, int elementsPerEntry, std::vector<T> data, bool normalize) {
+    unsigned int bufferID;
+    glGenBuffers(1, &bufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(T), data.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(id, elementsPerEntry, GL_FLOAT, normalize ? GL_TRUE : GL_FALSE, elementsPerEntry * sizeof(float), 0);
+    glEnableVertexAttribArray(id);
+    return bufferID;
+}
 
 unsigned int generateBuffer(Mesh &mesh) {
     unsigned int vaoID;
     glGenVertexArrays(1, &vaoID);
     glBindVertexArray(vaoID);
 
-    unsigned int vertexBufferID;
-    glGenBuffers(1, &vertexBufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-    glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(glm::vec3), mesh.vertices.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    glEnableVertexAttribArray(0);
-
-    unsigned int normalBufferID;
-    glGenBuffers(1, &normalBufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, normalBufferID);
-    glBufferData(GL_ARRAY_BUFFER, mesh.normals.size() * sizeof(glm::vec3), mesh.normals.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, 3 * sizeof(float), 0);
-    glEnableVertexAttribArray(1);
+    generateAttribute(0, 3, mesh.vertices, false);
+    generateAttribute(1, 3, mesh.normals, true);
+    if (mesh.textureCoordinates.size() > 0) {
+        generateAttribute(2, 2, mesh.textureCoordinates, false);
+    }
 
     unsigned int indexBufferID;
     glGenBuffers(1, &indexBufferID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
-
 
     return vaoID;
 }

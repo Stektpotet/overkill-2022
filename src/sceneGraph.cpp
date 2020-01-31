@@ -10,6 +10,14 @@ void addChild(SceneNode* parent, SceneNode* child) {
 	parent->children.push_back(child);
 }
 
+int totalChildren(SceneNode* parent) {
+	int count = parent->children.size();
+	for (SceneNode* child : parent->children) {
+		count += totalChildren(child);
+	}
+	return count;
+}
+
 // Pretty prints the current values of a SceneNode instance to stdout
 void printNode(SceneNode* node) {
 	printf(

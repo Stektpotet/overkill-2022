@@ -43,6 +43,11 @@ option (SFML_BUILD_NETWORK OFF)
 add_subdirectory(lib/SFML)
 
 #
+# Add FMT
+#
+add_subdirectory (lib/fmt)
+
+#
 # GLAD
 #
 if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/lib/glad/include)
@@ -74,6 +79,7 @@ include_directories (src/
                      lib/stb/
                      lib/arrrgh/
                      lib/SFML/include/)
+
 
 #
 # Add files
@@ -114,5 +120,6 @@ add_executable (${PROJECT_NAME} ${PROJECT_SOURCES} ${PROJECT_HEADERS}
 target_link_libraries (${PROJECT_NAME}
                        glfw
                        sfml-audio
+                       fmt::fmt
                        ${GLFW_LIBRARIES}
                        ${GLAD_LIBRARIES})

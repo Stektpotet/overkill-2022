@@ -1,205 +1,89 @@
 #include <iostream>
 #include "shapes.h"
 
-Mesh generateBox(float width, float height, float depth, bool flipFaces) {
-    // Hardcoded. Sue me.
+Mesh cube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inverted, glm::vec3 textureScale3d) {
+    glm::vec3 points[8];
+    int indices[36];
 
-    // Edit: well, that backfired..
+    for (int y = 0; y <= 1; y++)
+    for (int z = 0; z <= 1; z++)
+    for (int x = 0; x <= 1; x++) {
+        points[x+y*4+z*2] = glm::vec3(x*2-1, y*2-1, z*2-1) * 0.5f * scale;
+    }
 
-    std::vector<glm::vec3> vertices = {
-            {0,     0,      0},
-            {0,     0,      depth},
-            {0,     height, depth},
-
-            {0,     0,      0},
-            {0,     height, depth},
-            {0,     height, 0},
-
-            {width, 0,      0},
-            {width, height, depth},
-            {width, 0,      depth},
-
-            {width, 0,      0},
-            {width, height, 0},
-            {width, height, depth},
-
-            {0,     0,      0},
-            {width, height, 0},
-            {width, 0,      0},
-
-            {0,     0,      0},
-            {0,     height, 0},
-            {width, height, 0},
-
-            {0,     0,      depth},
-            {width, 0,      depth},
-            {width, height, depth},
-
-            {0,     0,      depth},
-            {width, height, depth},
-            {0,     height, depth},
-
-            {0,     0,      0},
-            {width, 0,      0},
-            {width, 0,      depth},
-
-            {0,     0,      0},
-            {width, 0,      depth},
-            {0,     0,      depth},
-
-            {width, height, 0},
-            {0,     height, 0},
-            {0,     height, depth},
-
-            {width, height, 0},
-            {0,     height, depth},
-            {width, height, depth},
+    int faces[6][4] = {
+        {2,3,0,1}, // Bottom 
+        {4,5,6,7}, // Top 
+        {7,5,3,1}, // Right 
+        {4,6,0,2}, // Left 
+        {5,4,1,0}, // Back 
+        {6,7,2,3}, // Front 
     };
 
-    // These are technically inverted relative to the vertex coordinates.
-    // But for some strange reason the faces are rendered inverted.
-    // So to make the assignment work this is the best I can do.
+    scale = scale * textureScale3d;
+    glm::vec2 faceScale[6] = {
+        {-scale.x,-scale.z}, // Bottom
+        {-scale.x,-scale.z}, // Top
+        { scale.z, scale.y}, // Right
+        { scale.z, scale.y}, // Left
+        { scale.x, scale.y}, // Back
+        { scale.x, scale.y}, // Front
+    }; 
 
-    std::vector<glm::vec3> normals = {
-            {1.0, 0.0, 0.0},
-            {1.0, 0.0, 0.0},
-            {1.0, 0.0, 0.0},
-
-            {1.0, 0.0, 0.0},
-            {1.0, 0.0, 0.0},
-            {1.0, 0.0, 0.0},
-
-            {-1.0, 0.0, 0.0},
-            {-1.0, 0.0, 0.0},
-            {-1.0, 0.0, 0.0},
-
-            {-1.0, 0.0, 0.0},
-            {-1.0, 0.0, 0.0},
-            {-1.0, 0.0, 0.0},
-
-            {0.0, 0.0, 1.0},
-            {0.0, 0.0, 1.0},
-            {0.0, 0.0, 1.0},
-
-            {0.0, 0.0, 1.0},
-            {0.0, 0.0, 1.0},
-            {0.0, 0.0, 1.0},
-
-            {0.0, 0.0, -1.0},
-            {0.0, 0.0, -1.0},
-            {0.0, 0.0, -1.0},
-
-            {0.0, 0.0, -1.0},
-            {0.0, 0.0, -1.0},
-            {0.0, 0.0, -1.0},
-
-            {0.0, 1.0, 0.0},
-            {0.0, 1.0, 0.0},
-            {0.0, 1.0, 0.0},
-
-            {0.0, 1.0, 0.0},
-            {0.0, 1.0, 0.0},
-            {0.0, 1.0, 0.0},
-
-            {0.0, -1.0, 0.0},
-            {0.0, -1.0, 0.0},
-            {0.0, -1.0, 0.0},
-
-            {0.0, -1.0, 0.0},
-            {0.0, -1.0, 0.0},
-            {0.0, -1.0, 0.0},
+    glm::vec3 normals[6] = {
+        { 0,-1, 0}, // Bottom 
+        { 0, 1, 0}, // Top 
+        { 1, 0, 0}, // Right 
+        {-1, 0, 0}, // Left 
+        { 0, 0,-1}, // Back 
+        { 0, 0, 1}, // Front 
     };
 
-    float texScaleFactorX = depth / height;
-    float texScaleFactorY = width / depth;
-    float texScaleFactorZ = width / height;
-    
-    std::vector<glm::vec2> textureCoordinates = {
-            {0, 0},
-            {texScaleFactorX, 0},
-            {texScaleFactorX, 1},
-
-            {0, 0},
-            {texScaleFactorX, 1},
-            {0, 1},
-
-            {0, 0},
-            {texScaleFactorX, 1},
-            {texScaleFactorX, 0},
-
-            {0, 0},
-            {0, 1},
-            {texScaleFactorX, 1},
-
-            {0, 0},
-            {texScaleFactorZ, 0},
-            {texScaleFactorZ, 1},
-
-            {0, 0},
-            {texScaleFactorZ, 1},
-            {0, 1},
-
-            {0, 0},
-            {texScaleFactorZ, 0},
-            {texScaleFactorZ, 1},
-
-            {0, 0},
-            {texScaleFactorZ, 1},
-            {0, 1},
-
-            {0, 0},
-            {texScaleFactorY, 0},
-            {texScaleFactorY, 1},
-
-            {0, 0},
-            {texScaleFactorY, 1},
-            {0, 1},
-
-            {0, 0},
-            {texScaleFactorY, 0},
-            {texScaleFactorY, 1},
-
-            {0, 0},
-            {texScaleFactorY, 1},
-            {0, 1},
-
+    glm::vec2 UVs[4] = {
+        {0, 0},
+        {0, 1},
+        {1, 0},
+        {1, 1},
     };
 
+    Mesh m;
+    for (int face = 0; face < 6; face++) {
+        int offset = face * 6;
+        indices[offset + 0] = faces[face][0];
+        indices[offset + 3] = faces[face][0];
 
-    std::vector<unsigned int> indices = {
-            0, 1, 2,
-            3, 4, 5,
-            6, 7, 8,
-            9, 10, 11,
-            12, 13, 14,
-            15, 16, 17,
-            18, 19, 20,
-            21, 22, 23,
-            24, 25, 26,
-            27, 28, 29,
-            30, 31, 32,
-            33, 34, 35
-    };
+        if (!inverted) {
+            indices[offset + 1] = faces[face][3];
+            indices[offset + 2] = faces[face][1];
+            indices[offset + 4] = faces[face][2];
+            indices[offset + 5] = faces[face][3];
+        } else {
+            indices[offset + 1] = faces[face][1];
+            indices[offset + 2] = faces[face][3];
+            indices[offset + 4] = faces[face][3];
+            indices[offset + 5] = faces[face][2];
+        }
 
-    if(flipFaces) {
-        for(int i = 0; i < 36; i += 3) {
-            unsigned int temp = indices[i + 1];
-            indices[i + 1] = indices[i + 2];
-            indices[i + 2] = temp;
+        for (int i = 0; i < 6; i++) {
+            m.vertices.push_back(points[indices[offset + i]]);
+            m.indices.push_back(offset + i);
+            m.normals.push_back(normals[face] * (inverted ? -1.f : 1.f));
+        }
 
-            normals[i + 0] *= -1;
-            normals[i + 1] *= -1;
-            normals[i + 2] *= -1;
+        glm::vec2 textureScaleFactor = tilingTextures ? (faceScale[face] / textureScale) : glm::vec2(1);
+
+        if (!inverted) {
+            for (int i : {1,2,3,1,0,2}) {
+                m.textureCoordinates.push_back(UVs[i] * textureScaleFactor);
+            }
+        } else {
+            for (int i : {3,1,0,3,0,2}) {
+                m.textureCoordinates.push_back(UVs[i] * textureScaleFactor);
+            }
         }
     }
 
-    Mesh mesh;
-    mesh.vertices = vertices;
-    mesh.normals = normals;
-    mesh.textureCoordinates = textureCoordinates;
-    mesh.indices = indices;
-
-    return mesh;
+    return m;
 }
 
 Mesh generateSphere(float sphereRadius, int slices, int layers) {
@@ -208,6 +92,7 @@ Mesh generateSphere(float sphereRadius, int slices, int layers) {
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec3> normals;
     std::vector<unsigned int> indices;
+    std::vector<glm::vec2> uvs;
 
     vertices.reserve(3 * triangleCount);
     normals.reserve(3 * triangleCount);
@@ -297,6 +182,14 @@ Mesh generateSphere(float sphereRadius, int slices, int layers) {
             indices.emplace_back(i + 4);
             indices.emplace_back(i + 5);
 
+            for (int j = 0; j < 6; j++) {
+                glm::vec3 vertex = vertices.at(i+j);
+                uvs.emplace_back(
+                    0.5 + (glm::atan(vertex.z, vertex.y)/(2.0*M_PI)),
+                    0.5 - (glm::asin(vertex.y)/M_PI)
+                );
+            }
+
             i += 6;
         }
     }
@@ -305,5 +198,6 @@ Mesh generateSphere(float sphereRadius, int slices, int layers) {
     mesh.vertices = vertices;
     mesh.normals = normals;
     mesh.indices = indices;
+    mesh.textureCoordinates = uvs;
     return mesh;
 }
