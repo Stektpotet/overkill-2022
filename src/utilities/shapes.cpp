@@ -1,6 +1,8 @@
 #include <iostream>
 #include "shapes.h"
 
+#define M_PI 3.14159265359f
+
 Mesh cube(glm::vec3 scale, glm::vec2 textureScale, bool tilingTextures, bool inverted, glm::vec3 textureScale3d) {
     glm::vec3 points[8];
     int indices[36];
