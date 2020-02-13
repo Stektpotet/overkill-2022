@@ -9,7 +9,7 @@ unsigned int generateAttribute(int id, int elementsPerEntry, std::vector<T> data
     glGenBuffers(1, &bufferID);
     glBindBuffer(GL_ARRAY_BUFFER, bufferID);
     glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(T), data.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(id, elementsPerEntry, GL_FLOAT, normalize ? GL_TRUE : GL_FALSE, elementsPerEntry * sizeof(float), 0);
+    glVertexAttribPointer(id, elementsPerEntry, GL_FLOAT, normalize ? GL_TRUE : GL_FALSE, elementsPerEntry * sizeof(T), 0);
     glEnableVertexAttribArray(id);
     return bufferID;
 }
