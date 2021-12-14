@@ -16,6 +16,13 @@ namespace Gloom
 {
     class Shader
     {
+    private:
+
+        // Private member variables
+        GLuint mProgram;
+        GLint  mStatus;
+        GLint  mLength;
+
     public:
         Shader() {
             mProgram = glCreateProgram();
@@ -144,10 +151,6 @@ namespace Gloom
         Shader(Shader const &) = delete;
         Shader & operator =(Shader const &) = delete;
 
-        // Private member variables
-        GLuint mProgram;
-        GLint  mStatus;
-        GLint  mLength;
     };
 }
 
