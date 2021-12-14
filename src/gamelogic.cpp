@@ -53,10 +53,10 @@ glm::vec3 ballDirection(1, 1, 0.2f);
 
 CommandLineOptions options;
 
-bool hasStarted = false;
-bool hasLost = false;
+bool hasStarted        = false;
+bool hasLost           = false;
 bool jumpedToNextFrame = false;
-bool isPaused = false;
+bool isPaused          = false;
 
 bool mouseLeftPressed   = false;
 bool mouseLeftReleased  = false;
@@ -131,14 +131,14 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     rootNode->children.push_back(padNode);
     rootNode->children.push_back(ballNode);
 
-    boxNode->vertexArrayObjectID = boxVAO;
-    boxNode->VAOIndexCount = box.indices.size();
+    boxNode->vertexArrayObjectID  = boxVAO;
+    boxNode->VAOIndexCount        = box.indices.size();
 
-    padNode->vertexArrayObjectID = padVAO;
-    padNode->VAOIndexCount = pad.indices.size();
+    padNode->vertexArrayObjectID  = padVAO;
+    padNode->VAOIndexCount        = pad.indices.size();
 
     ballNode->vertexArrayObjectID = ballVAO;
-    ballNode->VAOIndexCount = sphere.indices.size();
+    ballNode->VAOIndexCount       = sphere.indices.size();
 
 
 
@@ -182,7 +182,7 @@ void updateFrame(GLFWwindow* window) {
         mouseRightReleased = mouseRightPressed;
         mouseRightPressed = false;
     }
-    
+
     if(!hasStarted) {
         if (mouseLeftPressed) {
             if (options.enableMusic) {
@@ -296,7 +296,8 @@ void updateFrame(GLFWwindow* window) {
                 if (   ballPosition.x < padLeftX
                     || ballPosition.x > padRightX
                     || ballPosition.z < padFrontZ
-                    || ballPosition.z > padBackZ) {
+                    || ballPosition.z > padBackZ
+                ) {
                     hasLost = true;
                     if (options.enableMusic) {
                         sound->stop();
@@ -313,7 +314,7 @@ void updateFrame(GLFWwindow* window) {
 
     // Some math to make the camera move in a nice way
     float lookRotation = -0.6 / (1 + exp(-5 * (padPositionX-0.5))) + 0.3;
-    glm::mat4 cameraTransform = 
+    glm::mat4 cameraTransform =
                     glm::rotate(0.3f + 0.2f * float(-padPositionZ*padPositionZ), glm::vec3(1, 0, 0)) *
                     glm::rotate(lookRotation, glm::vec3(0, 1, 0)) *
                     glm::translate(-cameraPosition);
@@ -327,9 +328,9 @@ void updateFrame(GLFWwindow* window) {
     ballNode->scale = glm::vec3(ballRadius);
     ballNode->rotation = { 0, totalElapsedTime*2, 0 };
 
-    padNode->position  = { 
-        boxNode->position.x - (boxDimensions.x/2) + (padDimensions.x/2) + (1 - padPositionX) * (boxDimensions.x - padDimensions.x), 
-        boxNode->position.y - (boxDimensions.y/2) + (padDimensions.y/2), 
+    padNode->position  = {
+        boxNode->position.x - (boxDimensions.x/2) + (padDimensions.x/2) + (1 - padPositionX) * (boxDimensions.x - padDimensions.x),
+        boxNode->position.y - (boxDimensions.y/2) + (padDimensions.y/2),
         boxNode->position.z - (boxDimensions.z/2) + (padDimensions.z/2) + (1 - padPositionZ) * (boxDimensions.z - padDimensions.z)
     };
 

@@ -17,7 +17,9 @@ namespace Gloom
     class Shader
     {
     public:
-        Shader()            { mProgram = glCreateProgram(); }
+        Shader() {
+            mProgram = glCreateProgram();
+        }
 
         // Public member functions
         void   activate()   { glUseProgram(mProgram); }

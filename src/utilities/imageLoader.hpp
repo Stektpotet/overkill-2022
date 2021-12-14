@@ -5,7 +5,8 @@
 #include <string>
 
 typedef struct PNGImage {
-	unsigned int width, height;
+	unsigned int width;
+	unsigned int height;
 	std::vector<unsigned char> pixels;
 } PNGImage;
 
