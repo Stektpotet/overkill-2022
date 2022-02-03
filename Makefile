@@ -6,11 +6,13 @@ help:
 	@grep "^\.PHONY: " Makefile | cut -d" " -f2- | sed -e "s/ /\n/g" | grep -v "^_"
 
 .PHONY: run run-with-music
-run: build/glowbox
+run: build
 	cd build && ./glowbox
-run-with-music: build/glowbox
+run-with-music: build
 	cd build && ./glowbox --enable-music
 
+.PHONY: build
+build: build/glowbox
 build/glowbox: ${SOURCES} | build/Makefile has-make
 	make -C build
 
@@ -19,7 +21,7 @@ build/Makefile: | build/ _submodules has-cmake
 
 .PHONY: _submodules
 _submodules: | has-git
-	git submodule update --init
+	@git submodule update --init
 
 .PHONY: clean
 clean:
@@ -29,7 +31,7 @@ clean:
 
 # === helpers: ===
 
-# make folders
+# make folders, use as order-only prerequisite
 %/:
 	mkdir -p $*
 
