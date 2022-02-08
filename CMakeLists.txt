@@ -1,7 +1,7 @@
 #
 # Specify minimum CMake version and project name
 #
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required(VERSION 3.6)
 project (glowbox)
 
 #
@@ -131,3 +131,4 @@ target_link_libraries (${PROJECT_NAME}
                        fmt::fmt
                        ${GLFW_LIBRARIES}
                        ${GLAD_LIBRARIES})
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT glowbox)
