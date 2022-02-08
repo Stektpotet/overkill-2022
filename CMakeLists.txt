@@ -5,9 +5,26 @@ cmake_minimum_required (VERSION 3.0)
 project (glowbox)
 
 #
-# Set python 3 name
+# Set python cmd, preferring python 3
 #
-set (PYTHON_3 "python")
+
+find_program(PYTHON_3_LOCATION py)
+if(NOT "${PYTHON_3_LOCATION}" STREQUAL "PYTHON_3_LOCATION-NOTFOUND") # windows shim
+	execute_process(COMMAND py -3 --version RESULT_VARIABLE has_python_3)
+	if("${has_python_3}" STREQUAL "0")
+		set (PYTHON_CMD py -3)
+	else()
+		set (PYTHON_CMD py) # may use python 2
+	endif()
+else()
+    find_program(PYTHON_3_LOCATION python3)
+    if(NOT "${PYTHON_3_LOCATION}" STREQUAL "PYTHON_3_LOCATION-NOTFOUND") # windows shim
+    	set (PYTHON_CMD python3)
+    else()
+    	set (PYTHON_CMD python)
+    endif()
+endif()
+message("spis meg ${PYTHON_CMD}")
 
 #
 # CMake setup
@@ -51,20 +68,11 @@ add_subdirectory (lib/fmt)
 # GLAD
 #
 if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/lib/glad/include)
-    message("Generating glad library files")
-    execute_process(COMMAND ${PYTHON_3} ${CMAKE_CURRENT_SOURCE_DIR}/lib/verify_version.py OUTPUT_VARIABLE PY_VER)
-    string(REGEX REPLACE "\n$" "" PY_VER "${PY_VER}")
-    if (PY_VER)
-		execute_process(
-			COMMAND python -m glad --profile core --out-path . --generator c --spec gl
-			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/glad
-		)
-    else()
-		execute_process(
-			COMMAND python3 -m glad --profile core --out-path . --generator c --spec gl
-			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/glad
-		)
-    endif()
+    message("Generating glad library files, using ${PYTHON_CMD}")
+	execute_process(
+		COMMAND ${PYTHON_CMD} -m glad --profile core --out-path . --generator c --spec gl
+		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/glad
+	)
 	message("Finished generating glad library files")
 endif()
 
