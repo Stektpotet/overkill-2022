@@ -13,22 +13,24 @@
 #include <chrono>
 #include <fstream>
 
-enum SceneNodeType {
-	GEOMETRY, POINT_LIGHT, SPOT_LIGHT
+enum class SceneNodeType {
+	NONE,
+	GEOMETRY, 
+	POINT_LIGHT, 
+	SPOT_LIGHT
 };
 
 struct SceneNode {
-	SceneNode() {
+	SceneNode(SceneNodeType type = SceneNodeType::NONE) : nodeType{ type } {
 		position = glm::vec3(0, 0, 0);
 		rotation = glm::vec3(0, 0, 0);
 		scale = glm::vec3(1, 1, 1);
 
+		currentTransformationMatrix = glm::identity<glm::mat4>();
         referencePoint = glm::vec3(0, 0, 0);
         vertexArrayObjectID = -1;
         VAOIndexCount = 0;
-
-        nodeType = GEOMETRY;
-
+		lightID = -1;
 	}
 
 	// A list of all children that belong to this node.
@@ -52,9 +54,11 @@ struct SceneNode {
 
 	// Node type is used to determine how to handle the contents of a node
 	SceneNodeType nodeType;
+
+	int lightID;
 };
 
-SceneNode* createSceneNode();
+SceneNode* createSceneNode(SceneNodeType nodeType = SceneNodeType::NONE);
 void addChild(SceneNode* parent, SceneNode* child);
 void printNode(SceneNode* node);
 int totalChildren(SceneNode* parent);
