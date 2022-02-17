@@ -17,8 +17,6 @@ struct PointLight {
 	float constant;
 	float linear;
 	float quadratic;
-private:
-	float padding;
 };
 
 struct PointLightData {
@@ -28,5 +26,4 @@ struct PointLightData {
 	float constant;			// 24 + 4	  = 28 
 	float linear;			// 24 + 4	  = 28 
 	float quadratic;		// 24 + 4	  = 28 
-	float alignment;		// 24 + 4	  = 28 
 };

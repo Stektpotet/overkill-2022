@@ -10,6 +10,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 
 namespace Gloom
@@ -22,6 +23,7 @@ namespace Gloom
         GLuint mProgram;
         GLint  mStatus;
         GLint  mLength;
+        std::unordered_map<std::string, GLint> mAttributes;
 
     public:
         Shader() {
@@ -107,7 +109,12 @@ namespace Gloom
         /* Convenience function to get a uniforms ID from a string
            containing its name */
         GLint getUniformFromName(std::string const &uniformName) {
-            return glGetUniformLocation(this->get(), uniformName.c_str());
+            auto element = mAttributes.find(uniformName);
+            if (element != mAttributes.end())
+                return element->second;
+            auto loc = glGetUniformLocation(this->get(), uniformName.c_str());
+            mAttributes.emplace(uniformName, loc);
+            return loc;
         }
 
 

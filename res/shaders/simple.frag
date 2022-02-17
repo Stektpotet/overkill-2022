@@ -26,7 +26,7 @@ uniform layout(location = 6) mat2x3 pad_info; // pad_info[0] = position,    pad_
 uniform layout(location = 7) mat2x3 box_info; // box_info[0] = position,    pad_info[1] = dimensions
 
 uniform layout(location = 8) vec3 ambient_intensity = vec3(0.01, 0.01, 0.01);
-uniform layout(location = 9) vec3 specular_intensity = vec3(1.0, 0.95, 0.95);
+uniform layout(location = 9) vec3 specular_intensity = vec3(0.95, 0.95, 0.95);
 uniform layout(location = 10) PointLight light[MAX_LIGHTS];
 
 out vec4 color;
@@ -38,25 +38,22 @@ float dither(vec2 uv) { return (rand(uv)*2.0-1.0) / 256.0; }
 float shadow(in vec3 light_pos) {
     vec3 to_light = light_pos - world_position;
     vec3 to_ball = ball_info.xyz - world_position;
-    vec3 to_pad = pad_info[0] - world_position;
 
     vec3 light_dir = normalize(to_light);
     float scalar_projection = dot(to_ball, light_dir);
     vec3 rejection = to_ball - scalar_projection * light_dir;
-
-    float rejection_rate = smoothstep(0.0, 0.01, ball_info.w - length(rejection));
+    float rejection_rate = smoothstep(0.0, 0.2, ball_info.w - length(rejection));
     
     // Will become 0 when light is closer to the fragment than the ball
-    float light_closer = step(0, length(to_light) - (length(to_ball)));
+    float should_cast = step(0, scalar_projection) * step(length(to_ball), length(to_light));
 
-    return 1.0 - (rejection_rate *  step(0, scalar_projection));
+    return 1.0 - (rejection_rate * should_cast);
 }
 
 // Calculate light contribution (world space)
 vec3 pointlight(in PointLight light) {
 
-    vec3 to_light = light.position - world_position;
-    float occludsion_rate = shadow(to_light);
+    float occludsion_rate = shadow(light.position);
     
     vec3 extents = box_info[1].xyz;
     vec3 k = step(0, extents - abs(box_info[0] - light.position));
@@ -64,7 +61,7 @@ vec3 pointlight(in PointLight light) {
 
     // Diffussion
     vec3 norm = normalize(normal);
-    vec3 light_dir = normalize(to_light);
+    vec3 light_dir = normalize(light.position - world_position);
     float diffusion = max(dot(norm, light_dir), 0.0);
     vec3 diffuse = diffusion * light.intensities;
 
@@ -88,7 +85,7 @@ vec3 pointlight(in PointLight light) {
 void main()
 {
     vec3 lights = ambient_intensity;
-    color = vec4(0.25 * normalize(normal) + 0.5, 1.0);
+    color = vec4(0.5 * normalize(normal) + 0.5, 1.0);
 
     for (int i = 0; i < MAX_LIGHTS; i++) {
         lights += pointlight(light[i]);

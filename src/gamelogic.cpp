@@ -37,11 +37,10 @@ SceneNode* rootNode;
 SceneNode* boxNode;
 SceneNode* ballNode;
 SceneNode* padNode;
-SceneNode* lightRoot;
 
 double ballRadius = 3.0f;
 
-const int NUM_LIGHTS = 8;
+const int NUM_LIGHTS = 4;
 
 // These are heap allocated, because they should not be initialised at the start of the program
 sf::SoundBuffer* buffer;
@@ -123,53 +122,61 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     // Fill buffers
     unsigned int ballVAO = generateBuffer(sphere);
-    unsigned int boxVAO  = generateBuffer(box);
-    unsigned int padVAO  = generateBuffer(pad);
+    unsigned int boxVAO = generateBuffer(box);
+    unsigned int padVAO = generateBuffer(pad);
 
     // Construct scene
     rootNode = createSceneNode();
-    boxNode  = createSceneNode(SceneNodeType::GEOMETRY);
-    padNode  = createSceneNode(SceneNodeType::GEOMETRY);
+    boxNode = createSceneNode(SceneNodeType::GEOMETRY);
+    padNode = createSceneNode(SceneNodeType::GEOMETRY);
     ballNode = createSceneNode(SceneNodeType::GEOMETRY);
-    lightRoot = createSceneNode();
 
     rootNode->children.push_back(boxNode);
     rootNode->children.push_back(padNode);
     rootNode->children.push_back(ballNode);
 
-    boxNode->vertexArrayObjectID  = boxVAO;
-    boxNode->VAOIndexCount        = box.indices.size();
+    boxNode->vertexArrayObjectID = boxVAO;
+    boxNode->VAOIndexCount = box.indices.size();
 
-    padNode->vertexArrayObjectID  = padVAO;
-    padNode->VAOIndexCount        = pad.indices.size();
+    padNode->vertexArrayObjectID = padVAO;
+    padNode->VAOIndexCount = pad.indices.size();
 
     ballNode->vertexArrayObjectID = ballVAO;
-    ballNode->VAOIndexCount       = sphere.indices.size();
-
-    lightRoot->position = { 0, padDimensions.y , 0 };
-    padNode->children.push_back(lightRoot);
+    ballNode->VAOIndexCount = sphere.indices.size();
 
     glm::vec3 intensities[NUM_LIGHTS] = {
         {1,0,0},
         {0,1,0},
         {0,0,1},
-        {0.0,0.0,0.0},
-        {1,0,0},
-        {0,1,0},
-        {0,0,1},
-        {0, 0, 0}
+        {0.2, 0.2, 0.2}
+        /*  {0.0,0.0,0.0},
+          {1,0,0},
+          {0,1,0},
+          {0,0,1},
+          {0, 0, 0}*/
     };
     // Construct scene lights
-    for (size_t i = 0; i < NUM_LIGHTS; i++)
+    for (size_t i = 0; i < NUM_LIGHTS - 1; i++)
     {
         lights[i].intensities = intensities[i];// glm::vec3(1, 1, 1);//glm::abs(glm::sphericalRand(1.0f));
         SceneNode* lightSource = createSceneNode();
         lightSource->lightID = i;
         lightSource->nodeType = SceneNodeType::POINT_LIGHT;
-        float circPos = glm::two_pi<float>() * ((float)i / (NUM_LIGHTS - 1));
-        lightSource->position = glm::vec3(glm::cos(circPos) * 10, 0, glm::sin(circPos) * 10);
-        lightRoot->children.push_back(lightSource);
+        //float circPos = glm::two_pi<float>() * ((float)i / (NUM_LIGHTS - 1));
+        lightSource->position = glm::vec3(i * 5 - (5 * (NUM_LIGHTS - 2)) * 0.5f, 2, 10);//glm::vec3(glm::cos(circPos) * 10, 0, glm::sin(circPos) * 10);
+        padNode->children.push_back(lightSource);
     }
+    lights[NUM_LIGHTS - 1].intensities = intensities[NUM_LIGHTS - 1];
+    lights[NUM_LIGHTS - 1].linear *= 0.6f;
+    lights[NUM_LIGHTS - 1].quadratic *= 0.6f;
+
+    SceneNode* lightSource = createSceneNode();
+    lightSource->lightID = NUM_LIGHTS - 1;
+    lightSource->nodeType = SceneNodeType::POINT_LIGHT;
+    //float circPos = glm::two_pi<float>() * ((float)i / (NUM_LIGHTS - 1));
+    lightSource->position = glm::vec3(0, 0, 1.1f);//glm::vec3(glm::cos(circPos) * 10, 0, glm::sin(circPos) * 10);
+    
+    ballNode->children.push_back(lightSource);
     //lights[NUM_LIGHTS - 1].intensities = intensities[NUM_LIGHTS - 1];
     //SceneNode* lightSource = createSceneNode();
     //lightSource->lightID = NUM_LIGHTS - 1;
@@ -339,13 +346,13 @@ void updateFrame(GLFWwindow* window) {
             }
         }
     }
-    for (size_t i = 0; i < lightRoot->children.size(); i++)
+    for (size_t i = 0; i < padNode->children.size(); i++)
     {
-        auto const& child = lightRoot->children[i];
+        auto const& child = padNode->children[i];
         float circPos = glm::two_pi<float>()* ((float)i / (NUM_LIGHTS - 1));
-        glm::vec2 horisontal = { child->position.x, child->position.z };
-        child->position = { horisontal.x, glm::cos(circPos + totalElapsedTime) * 1, horisontal.x };
+        child->position = { child->position.x, 2 + glm::cos(circPos + totalElapsedTime) * 2, child->position.z };
     }
+    lights[NUM_LIGHTS - 1].intensities = {0.5f + glm::cos(totalElapsedTime * 4) * 0.5, 0,0.5f + glm::sin(totalElapsedTime * 4) * 0.5 };
     //lightRoot->rotation = { 0, totalElapsedTime, 0 };
     // Move and rotate various SceneNodes
     boxNode->position = { 0, -10, -80 };
@@ -363,7 +370,7 @@ void updateFrame(GLFWwindow* window) {
     updateNodeTransformations(rootNode);
 
     glm::vec4 ballInfo = {
-        ballNode->position, //glm::vec3(ballNode->currentTransformationMatrix * glm::vec4{ballNode->position, 1.0f}),
+        ballNode->position,
         ballRadius
     };
     glm::mat2x3 boxInfo{
@@ -372,31 +379,60 @@ void updateFrame(GLFWwindow* window) {
     };
 
     // Update ball information for shadow casting
-    glUniform4fv(5, 1, glm::value_ptr(ballInfo));
-    glUniformMatrix2x3fv(6, 1, GL_FALSE, glm::value_ptr(glm::mat2x3(padNode->position, padDimensions)));
-    glUniformMatrix2x3fv(7, 1, GL_FALSE, glm::value_ptr(boxInfo));
+    glUniform4fv(shader->getUniformFromName("ball_info"), 1, glm::value_ptr(ballInfo));
+    //glUniformMatrix2x3fv(6, 1, GL_FALSE, glm::value_ptr(glm::mat2x3(padNode->position, padDimensions)));
+    glUniformMatrix2x3fv(shader->getUniformFromName("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
 }
 
 void updateNodeTransformations(SceneNode* node) {
     updateNodeTransformations(node, glm::identity<glm::mat4>());
 }
 void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar) {
-    glm::mat4 transformationMatrix =
-              glm::translate(node->position)
-            * glm::translate(node->referencePoint)
-            * glm::rotate(node->rotation.y, glm::vec3(0,1,0))
-            * glm::rotate(node->rotation.x, glm::vec3(1,0,0))
-            * glm::rotate(node->rotation.z, glm::vec3(0,0,1))
-            * glm::scale(node->scale)
-            * glm::translate(-node->referencePoint);
-
-    node->currentTransformationMatrix = transformationThusFar * transformationMatrix;
-
+    glm::mat4 localTransformation;
     switch(node->nodeType) {
-        case SceneNodeType::GEOMETRY: break;
-        case SceneNodeType::POINT_LIGHT: break;
-        case SceneNodeType::SPOT_LIGHT: break;
+        case SceneNodeType::POINT_LIGHT: 
+        {
+            localTransformation = glm::translate(node->position);
+
+            if (node->lightID != -1) {
+                // SUPER DUPER HACKY APPROACH FOR NOW
+                PointLight lightData = lights[node->lightID];
+                glUniform3fv(shader->getUniformFromName(fmt::format("light[{}].position", node->lightID)), 
+                    1, glm::value_ptr(node->currentTransformationMatrix * glm::vec4(node->position, 1.0f)));
+                glUniform3fv(shader->getUniformFromName(fmt::format("light[{}].intensities", node->lightID)),
+                    1, glm::value_ptr(lightData.intensities));
+                glUniform1f(shader->getUniformFromName(fmt::format("light[{}].constant", node->lightID)), lightData.constant);
+                glUniform1f(shader->getUniformFromName(fmt::format("light[{}].linear", node->lightID)), lightData.linear);
+                glUniform1f(shader->getUniformFromName(fmt::format("light[{}].quadratic", node->lightID)), lightData.quadratic);
+            }
+        }
+        break;
+        case SceneNodeType::SPOT_LIGHT: 
+        {
+            localTransformation =
+                glm::translate(node->position)
+                * glm::translate(node->referencePoint)
+                * glm::rotate(node->rotation.y, glm::vec3(0, 1, 0))
+                * glm::rotate(node->rotation.x, glm::vec3(1, 0, 0))
+                * glm::rotate(node->rotation.z, glm::vec3(0, 0, 1))
+                * glm::translate(-node->referencePoint);
+        }
+        break;
+        default:
+        {
+            localTransformation =
+                glm::translate(node->position)
+                * glm::translate(node->referencePoint)
+                * glm::rotate(node->rotation.y, glm::vec3(0, 1, 0))
+                * glm::rotate(node->rotation.x, glm::vec3(1, 0, 0))
+                * glm::rotate(node->rotation.z, glm::vec3(0, 0, 1))
+                * glm::scale(node->scale)
+                * glm::translate(-node->referencePoint);
+        }
+        break;
     }
+
+    node->currentTransformationMatrix = transformationThusFar * localTransformation;
 
     for(SceneNode* child : node->children) {
         updateNodeTransformations(child, node->currentTransformationMatrix);
@@ -419,10 +455,10 @@ void renderNode(SceneNode* node) {
     glm::mat4 VP = projection * cameraTransform;
     glm::mat4 MVP = VP * node->currentTransformationMatrix;
     glm::mat3 NRM = glm::transpose(glm::inverse(glm::mat3(node->currentTransformationMatrix)));
-    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(MVP));
-    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(NRM));
-    glUniform3fv(3, 1, glm::value_ptr(-cameraPosition));
+    glUniformMatrix4fv(shader->getUniformFromName("MVP"), 1, GL_FALSE, glm::value_ptr(MVP));
+    glUniformMatrix4fv(shader->getUniformFromName("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+    glUniformMatrix3fv(shader->getUniformFromName("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
+    glUniform3fv(shader->getUniformFromName("eye"), 1, glm::value_ptr(-cameraPosition));
     switch(node->nodeType) {
         case SceneNodeType::GEOMETRY:
             if(node->vertexArrayObjectID != -1) {
@@ -431,16 +467,6 @@ void renderNode(SceneNode* node) {
             }
             break;
         case SceneNodeType::POINT_LIGHT: 
-            if (node->lightID != -1) {
-                // SUPER DUPER HACKY APPROACH FOR NOW
-                int lightLocationBase = 10 + 5 * node->lightID;
-                PointLight lightSource = lights[node->lightID];
-                glUniform3fv(lightLocationBase, 1, glm::value_ptr(node->currentTransformationMatrix * glm::vec4(node->position, 1.0f)));
-                glUniform3fv(lightLocationBase + 1, 1, glm::value_ptr(lightSource.intensities));
-                glUniform1f(lightLocationBase + 2, lightSource.constant);
-                glUniform1f(lightLocationBase + 3, lightSource.linear);
-                glUniform1f(lightLocationBase + 4, lightSource.quadratic);
-            }
             break;
         case SceneNodeType::SPOT_LIGHT: break;
     }
