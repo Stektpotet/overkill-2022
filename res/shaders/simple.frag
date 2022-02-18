@@ -57,7 +57,7 @@ vec3 pointlight(in PointLight light) {
     
     vec3 extents = box_info[1].xyz;
     vec3 k = step(0, extents - abs(box_info[0] - light.position));
-    float inside = 1;
+    float inside = k.x * k.y * k.z;
 
     // Diffussion
     vec3 norm = normalize(normal);

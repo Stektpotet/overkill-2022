@@ -114,6 +114,7 @@ namespace Gloom
                 return element->second;
             auto loc = glGetUniformLocation(this->get(), uniformName.c_str());
             mAttributes.emplace(uniformName, loc);
+            printf("SHADER: Cached aside uniform %s : %d\n", uniformName.c_str(), loc);
             return loc;
         }
 
