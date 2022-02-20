@@ -39,3 +39,20 @@ PNGImage loadPNGFile(std::string fileName)
 	return image;
 
 }
+
+void savePNGFile(std::string fileName, PNGImage img)
+{
+	std::vector<unsigned char> png;
+	unsigned int widthBytes = 4 * img.width;
+	for (unsigned int row = 0; row < (img.height / 2); row++) {
+		for (unsigned int col = 0; col < widthBytes; col++) {
+			std::swap(img.pixels[row * widthBytes + col], img.pixels[(img.height - 1 - row) * widthBytes + col]);
+		}
+	}
+
+	unsigned error = lodepng::encode(png, img.pixels, img.width, img.height, LodePNGColorType::LCT_RGBA);
+	if (!error) lodepng::save_file(png, fileName);
+
+	//if there's an error, display it
+	if (error) std::cout << "encoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+}

@@ -16,7 +16,7 @@ out layout(location = 2) vec2 uv_out;
 void main()
 {
     uv_out = uv;
-    normal_out = normalize(NRM * normal);
+    normal_out = normalize(NRM * normalize(normal));
     gl_Position = MVP * vec4(position, 1.0);
     position_out = TRS * vec4(position, 1.0);
 }

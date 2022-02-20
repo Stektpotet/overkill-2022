@@ -14,7 +14,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <fmt/format.h>
 #include "gamelogic.h"
-#include "lights.hpp"
+#include "lights.h"
 #include "sceneGraph.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
@@ -26,6 +26,7 @@ enum KeyFrameAction {
 };
 
 #include <timestamps.h>
+#include <utilities/imageLoader.hpp>
 
 double padPositionX = 0;
 double padPositionZ = 0;
@@ -153,6 +154,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     // Construct scene lights
     for (size_t i = 0; i < NUM_LIGHTS - 1; i++)
     {
+        lights[i].setRadius(200);
         lights[i].intensities = intensities[i];
         SceneNode* lightSource = createSceneNode();
         lightSource->lightID = i;
@@ -166,7 +168,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     ballNode->children.push_back(lightSource);
     lightSource->lightID = NUM_LIGHTS - 1;
     lightSource->nodeType = SceneNodeType::POINT_LIGHT;
-    lightSource->position = glm::vec3(0, 0, 1.1f);  // The ball will be spinning around Y, let's have this light spin around with it
+    lightSource->position = glm::vec3(0, 0, 1.5f);  // The ball will be spinning around Y, let's have this light spin around with it
 
     getTimeDeltaSeconds();
 
@@ -190,6 +192,7 @@ void updateFrame(GLFWwindow* window) {
     const float ballMaxX = boxNode->position.x + (boxDimensions.x/2) - ballRadius;
     const float ballMinZ = boxNode->position.z - (boxDimensions.z/2) + ballRadius;
     const float ballMaxZ = boxNode->position.z + (boxDimensions.z/2) - ballRadius - cameraWallOffset;
+
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
         mouseLeftPressed = true;
@@ -349,10 +352,10 @@ void updateFrame(GLFWwindow* window) {
     {
         float offset = glm::two_pi<float>() * ((float)i / (NUM_LIGHTS - 1));
         padNode->children[i]->position.y = 2 + glm::cos(offset + totalElapsedTime) * 2;
+        padNode->children[i]->position.x = 2 + glm::sin(offset + totalElapsedTime) * 2;
     }
     lights[NUM_LIGHTS - 1].intensities = { 0.5f + glm::cos(totalElapsedTime * 4) * 0.5, 0,0.5f + glm::sin(totalElapsedTime * 4) * 0.5 };
 
-    updateNodeTransformations(rootNode);
 
     // Update geometry information for shadow casting
     glm::vec4 ballInfo = { 
@@ -365,6 +368,8 @@ void updateFrame(GLFWwindow* window) {
     glUniform4fv(shader->getUniformFromName("ball_info"), 1, glm::value_ptr(ballInfo));
     //glUniformMatrix2x3fv(6, 1, GL_FALSE, glm::value_ptr(glm::mat2x3(padNode->position, padDimensions)));
     glUniformMatrix2x3fv(shader->getUniformFromName("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
+
+    updateNodeTransformations(rootNode);
 }
 
 void updateNodeTransformations(SceneNode* node) {
@@ -376,11 +381,10 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
         case SceneNodeType::POINT_LIGHT: 
         {
             localTransformation = glm::translate(node->position);
-
             if (node->lightID != -1) {
                 PointLight lightData = lights[node->lightID];
-                glUniform3fv(shader->getUniformFromName(fmt::format("light[{}].position", node->lightID)), 
-                    1, glm::value_ptr(node->currentTransformationMatrix[3]));
+                glUniform3fv(shader->getUniformFromName(fmt::format("light[{}].position", node->lightID)),
+                    1, glm::value_ptr(glm::vec3(node->currentTransformationMatrix[3])));
                 glUniform3fv(shader->getUniformFromName(fmt::format("light[{}].intensities", node->lightID)),
                     1, glm::value_ptr(lightData.intensities));
                 glUniform1f(shader->getUniformFromName(fmt::format("light[{}].constant", node->lightID)), lightData.constant);
@@ -464,4 +468,17 @@ void renderFrame(GLFWwindow* window) {
     glViewport(0, 0, windowWidth, windowHeight);
 
     renderNode(rootNode);
+
+    // Utility for grabbing a screenshot for the various tasks
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+        PNGImage imgGrab = PNGImage();
+        imgGrab.width = windowWidth;
+        imgGrab.height = windowHeight;
+        imgGrab.pixels.resize(4 * windowWidth * windowHeight);
+        glReadPixels(0, 0, windowWidth, windowWidth, GL_RGBA, GL_UNSIGNED_BYTE, &imgGrab.pixels[0]);
+        GLenum err = glGetError();
+        if (err != GL_NO_ERROR)
+            std::cout << "Encountered error with glReadPixels: " << err << std::endl;
+        savePNGFile("screenshot.png", imgGrab);
+    }
 }
