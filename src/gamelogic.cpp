@@ -21,6 +21,9 @@
 #include <glm/gtc/random.hpp>
 
 
+#include "utilities/imageLoader.hpp"
+#include "utilities/glfont.h"
+
 enum KeyFrameAction {
     BOTTOM, TOP
 };
