@@ -2,15 +2,17 @@
 #include <iostream>
 
 // Original source: https://raw.githubusercontent.com/lvandeve/lodepng/master/examples/example_decode.cpp
-PNGImage loadPNGFile(std::string fileName)
+OK::RawTexture loadPNGFile(std::string fileName)
 {
 	std::vector<unsigned char> png;
 	std::vector<unsigned char> pixels; //the raw pixels
 	unsigned int width, height;
 
 	//load and decode
-	unsigned error = lodepng::load_file(png, fileName);
-	if(!error) error = lodepng::decode(pixels, width, height, png);
+	//unsigned error = lodepng::load_file(png, fileName);
+	//if(!error) error = lodepng::decode(pixels, width, height, png);
+
+	unsigned error = lodepng::decode(pixels, width, height, fileName);
 
 	//if there's an error, display it
 	if(error) std::cout << "decoder error " << error << ": " << lodepng_error_text(error) << std::endl;
@@ -31,7 +33,7 @@ PNGImage loadPNGFile(std::string fileName)
 		}
 	}
 
-	PNGImage image;
+	OK::RawTexture image;
 	image.width = width;
 	image.height = height;
 	image.pixels = pixels;
@@ -40,7 +42,7 @@ PNGImage loadPNGFile(std::string fileName)
 
 }
 
-void savePNGFile(std::string fileName, PNGImage img)
+void savePNGFile(std::string fileName, OK::RawTexture img)
 {
 	std::vector<unsigned char> png;
 	unsigned int widthBytes = 4 * img.width;

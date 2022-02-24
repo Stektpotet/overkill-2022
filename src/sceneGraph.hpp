@@ -15,7 +15,9 @@
 
 enum class SceneNodeType {
 	NONE,
-	GEOMETRY, 
+	GEOMETRY,
+	NORMAL_MAPPED,
+	UI,
 	POINT_LIGHT, 
 	SPOT_LIGHT
 };
@@ -31,6 +33,8 @@ struct SceneNode {
         vertexArrayObjectID = -1;
         VAOIndexCount = 0;
 		lightID = -1;
+		textureID = 0u;
+		nrmTextureID = 0u;
 	}
 
 	// A list of all children that belong to this node.
@@ -56,6 +60,8 @@ struct SceneNode {
 	SceneNodeType nodeType;
 
 	int lightID;
+	unsigned int textureID;
+	unsigned int nrmTextureID;
 };
 
 SceneNode* createSceneNode(SceneNodeType nodeType = SceneNodeType::NONE);

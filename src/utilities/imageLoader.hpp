@@ -1,15 +1,10 @@
 #pragma once
 
 #include "lodepng.h"
+#include "overkill/Texture.hpp"
 #include <vector>
 #include <string>
 
-typedef struct PNGImage {
-	unsigned int width;
-	unsigned int height;
-	std::vector<unsigned char> pixels;
-} PNGImage;
+OK::RawTexture loadPNGFile(std::string fileName);
 
-PNGImage loadPNGFile(std::string fileName);
-
-void savePNGFile(std::string fileName, const PNGImage image);
+void savePNGFile(std::string fileName, const OK::RawTexture image);

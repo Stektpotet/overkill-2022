@@ -14,7 +14,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <fmt/format.h>
 #include "gamelogic.h"
-#include "lights.h"
 #include "sceneGraph.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
@@ -23,6 +22,7 @@
 
 #include "utilities/imageLoader.hpp"
 #include "utilities/glfont.h"
+#include "utilities/lights.h"
 
 enum KeyFrameAction {
     BOTTOM, TOP
@@ -30,6 +30,7 @@ enum KeyFrameAction {
 
 #include <timestamps.h>
 #include <utilities/imageLoader.hpp>
+#include <overkill/BufferLayout.hpp>
 
 double padPositionX = 0;
 double padPositionZ = 0;
@@ -41,6 +42,7 @@ SceneNode* rootNode;
 SceneNode* boxNode;
 SceneNode* ballNode;
 SceneNode* padNode;
+SceneNode* textNode;
 
 double ballRadius = 3.0f;
 
@@ -48,7 +50,8 @@ const int NUM_LIGHTS = 4;
 
 // These are heap allocated, because they should not be initialised at the start of the program
 sf::SoundBuffer* buffer;
-Gloom::Shader* shader;
+Gloom::Shader* geometryShader;
+Gloom::Shader* uiShader;
 sf::Sound* sound;
 
 const glm::vec3 boxDimensions(180, 90, 90);
@@ -97,11 +100,6 @@ void mouseCallback(GLFWwindow* window, double x, double y) {
     glfwSetCursorPos(window, windowWidth / 2, windowHeight / 2);
 }
 
-//// A few lines to help you if you've never used c++ structs
-// struct LightSource {
-//     bool a_placeholder_value;
-// };
-// LightSource lightSources[/*Put number of light sources you want here*/];
 PointLight lights[NUM_LIGHTS];
 
 void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
@@ -115,29 +113,42 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     glfwSetCursorPosCallback(window, mouseCallback);
 
-    shader = new Gloom::Shader();
-    shader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
-    shader->activate();
+    geometryShader = new Gloom::Shader();
+    geometryShader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
+    geometryShader->activate();
+
+    OK::RawTexture charmap = loadPNGFile("..\\res\\textures\\charmap.png");
+    auto atlas = makeTexture(charmap);
 
     // Create meshes
     Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
     Mesh box = cube(boxDimensions, glm::vec2(90), true, true);
     Mesh sphere = generateSphere(1.0, 40, 40);
+    std::string text = "Test pls ignore";    
+    Mesh textMesh = generateTextGeometryBuffer(text, 32.f / text.length(), 29 * text.length());
+
+    auto ubufLayout = OK::BufferLayout<>({
+        {GL_FLOAT_MAT4, 2, GL_FALSE}
+        });
 
     // Fill buffers
     unsigned int ballVAO = generateBuffer(sphere);
     unsigned int boxVAO = generateBuffer(box);
     unsigned int padVAO = generateBuffer(pad);
+    unsigned int textVAO = generateBuffer(textMesh);
 
     // Construct scene
     rootNode = createSceneNode();
     boxNode = createSceneNode(SceneNodeType::GEOMETRY);
     padNode = createSceneNode(SceneNodeType::GEOMETRY);
     ballNode = createSceneNode(SceneNodeType::GEOMETRY);
+    textNode = createSceneNode(SceneNodeType::UI);
+    textNode->position = { 0, -10, -80 };
 
     rootNode->children.push_back(boxNode);
     rootNode->children.push_back(padNode);
     rootNode->children.push_back(ballNode);
+    rootNode->children.push_back(textNode);
 
     boxNode->vertexArrayObjectID = boxVAO;
     boxNode->VAOIndexCount = box.indices.size();
@@ -148,13 +159,13 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     ballNode->vertexArrayObjectID = ballVAO;
     ballNode->VAOIndexCount = sphere.indices.size();
 
-    glm::vec3 intensities[NUM_LIGHTS] = {
-        {1,0,0},
-        {0,1,0},
-        {0,0,1},
-        {0.2, 0.2, 0.2}
-    };
-    // Construct scene lights
+    textNode->vertexArrayObjectID = textVAO;
+    textNode->VAOIndexCount = textMesh.indices.size();
+
+    glm::vec3 intensities[NUM_LIGHTS];
+    std::fill(std::begin(intensities), std::end(intensities), glm::vec3{ 1,1,1 });
+    std::memcpy(std::begin(intensities), std::begin<glm::vec3>({ {1,0,0}, {0,1,0}, {0,0,1}, {0.2, 0.2, 0.2} }), 4);
+    
     for (size_t i = 0; i < NUM_LIGHTS - 1; i++)
     {
         lights[i].setRadius(200);
@@ -228,7 +239,7 @@ void updateFrame(GLFWwindow* window) {
 
         ballPosition.x = ballMinX + (1 - padPositionX) * (ballMaxX - ballMinX);
         ballPosition.y = ballBottomY;
-        ballPosition.z = ballMinZ + (1 - padPositionZ) * ((ballMaxZ+cameraWallOffset) - ballMinZ);
+        ballPosition.z = ballMinZ + (1 - padPositionZ) * ((ballMaxZ + cameraWallOffset) - ballMinZ);
     } else {
         totalElapsedTime += timeDelta;
         if(hasLost) {
@@ -368,9 +379,9 @@ void updateFrame(GLFWwindow* window) {
         glm::vec3(boxNode->currentTransformationMatrix[3]), boxDimensions * 0.5f
     };
 
-    glUniform4fv(shader->getUniformFromName("ball_info"), 1, glm::value_ptr(ballInfo));
+    glUniform4fv(geometryShader->getUniformFromName("ball_info"), 1, glm::value_ptr(ballInfo));
     //glUniformMatrix2x3fv(6, 1, GL_FALSE, glm::value_ptr(glm::mat2x3(padNode->position, padDimensions)));
-    glUniformMatrix2x3fv(shader->getUniformFromName("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
+    glUniformMatrix2x3fv(geometryShader->getUniformFromName("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
 
     updateNodeTransformations(rootNode);
 }
@@ -386,13 +397,13 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
             localTransformation = glm::translate(node->position);
             if (node->lightID != -1) {
                 PointLight lightData = lights[node->lightID];
-                glUniform3fv(shader->getUniformFromName(fmt::format("light[{}].position", node->lightID)),
+                glUniform3fv(geometryShader->getUniformFromName(fmt::format("light[{}].position", node->lightID)),
                     1, glm::value_ptr(glm::vec3(node->currentTransformationMatrix[3])));
-                glUniform3fv(shader->getUniformFromName(fmt::format("light[{}].intensities", node->lightID)),
+                glUniform3fv(geometryShader->getUniformFromName(fmt::format("light[{}].intensities", node->lightID)),
                     1, glm::value_ptr(lightData.intensities));
-                glUniform1f(shader->getUniformFromName(fmt::format("light[{}].constant", node->lightID)), lightData.constant);
-                glUniform1f(shader->getUniformFromName(fmt::format("light[{}].linear", node->lightID)), lightData.linear);
-                glUniform1f(shader->getUniformFromName(fmt::format("light[{}].quadratic", node->lightID)), lightData.quadratic);
+                glUniform1f(geometryShader->getUniformFromName(fmt::format("light[{}].constant", node->lightID)), lightData.constant);
+                glUniform1f(geometryShader->getUniformFromName(fmt::format("light[{}].linear", node->lightID)), lightData.linear);
+                glUniform1f(geometryShader->getUniformFromName(fmt::format("light[{}].quadratic", node->lightID)), lightData.quadratic);
             }
         }
         break;
@@ -444,10 +455,10 @@ void renderNode(SceneNode* node) {
     glm::mat4 VP = projection * cameraTransform;
     glm::mat4 MVP = VP * node->currentTransformationMatrix;
     glm::mat3 NRM = glm::transpose(glm::inverse(glm::mat3(node->currentTransformationMatrix)));
-    glUniformMatrix4fv(shader->getUniformFromName("MVP"), 1, GL_FALSE, glm::value_ptr(MVP));
-    glUniformMatrix4fv(shader->getUniformFromName("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-    glUniformMatrix3fv(shader->getUniformFromName("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
-    glUniform3fv(shader->getUniformFromName("eye"), 1, glm::value_ptr(-cameraPosition));
+    glUniformMatrix4fv(geometryShader->getUniformFromName("MVP"), 1, GL_FALSE, glm::value_ptr(MVP));
+    glUniformMatrix4fv(geometryShader->getUniformFromName("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+    glUniformMatrix3fv(geometryShader->getUniformFromName("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
+    glUniform3fv(geometryShader->getUniformFromName("eye"), 1, glm::value_ptr(-cameraPosition));
     switch(node->nodeType) {
         case SceneNodeType::GEOMETRY:
             if(node->vertexArrayObjectID != -1) {
@@ -474,7 +485,7 @@ void renderFrame(GLFWwindow* window) {
 
     // Utility for grabbing a screenshot for the various tasks
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
-        PNGImage imgGrab = PNGImage();
+        OK::RawTexture imgGrab = OK::RawTexture();
         imgGrab.width = windowWidth;
         imgGrab.height = windowHeight;
         imgGrab.pixels.resize(4 * windowWidth * windowHeight);
