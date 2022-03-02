@@ -30,7 +30,9 @@ enum KeyFrameAction {
 
 #include <timestamps.h>
 #include <utilities/imageLoader.hpp>
-#include <overkill/BufferLayout.hpp>
+#include <overkill/graphics_internal/BufferLayout.hpp>
+#include <overkill/graphics_internal/ShaderIntrospector.hpp>
+#include <overkill/graphics_internal/UniformBuffer.hpp>
 
 double padPositionX = 0;
 double padPositionZ = 0;
@@ -44,15 +46,22 @@ SceneNode* ballNode;
 SceneNode* padNode;
 SceneNode* textNode;
 
+OK::UniformBuffer lightBuffer;
+OK::UniformBuffer matrixBuffer;
+
 double ballRadius = 3.0f;
 
-const int NUM_LIGHTS = 4;
+const int NUM_LIGHTS = 3;
+#define MAX_LIGHTS 16 // FOR NOW WE LEAVE IT AS A DEFINE. IDEALLY, WE INJECT THIS DEFINE INTO THE SHADERS UPON READING THEM IN
 
 // These are heap allocated, because they should not be initialised at the start of the program
 sf::SoundBuffer* buffer;
-Gloom::Shader* geometryShader;
+Gloom::Shader* simpleGeometryShader;
+Gloom::Shader* texturedShader;
 Gloom::Shader* uiShader;
 sf::Sound* sound;
+OK::Texture2D charmapAtlasTexture;
+OK::Texture2D brickwall[3];
 
 const glm::vec3 boxDimensions(180, 90, 90);
 const glm::vec3 padDimensions(30, 3, 40);
@@ -79,8 +88,8 @@ double totalElapsedTime = debug_startTime;
 double gameElapsedTime = debug_startTime;
 
 double mouseSensitivity = 1.0;
-double lastMouseX = windowWidth / 2;
-double lastMouseY = windowHeight / 2;
+double lastMouseX = WINDOW_WIDTH / 2;
+double lastMouseY = WINDOW_HEIGHT / 2;
 void mouseCallback(GLFWwindow* window, double x, double y) {
     int windowWidth, windowHeight;
     glfwGetWindowSize(window, &windowWidth, &windowHeight);
@@ -113,37 +122,96 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     glfwSetCursorPosCallback(window, mouseCallback);
 
-    geometryShader = new Gloom::Shader();
-    geometryShader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
-    geometryShader->activate();
+    uiShader = new Gloom::Shader();
+    uiShader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/text.frag");
+    uiShader->isValid();
 
-    OK::RawTexture charmap = loadPNGFile("..\\res\\textures\\charmap.png");
-    auto atlas = makeTexture(charmap);
+    simpleGeometryShader = new Gloom::Shader();
+    simpleGeometryShader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
+    simpleGeometryShader->isValid();
+
+    texturedShader = new Gloom::Shader();
+    texturedShader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/textured.frag");
+    texturedShader->isValid();
+
+    auto shaders = { uiShader, simpleGeometryShader, texturedShader };
+
+    auto pointLightStructLayout = OK::BlockLayout("light", {
+        {"position",    16},
+        {"intensities", 16},
+        {"constant",    4},
+        {"linear",      4},
+        {"quadratic",   4},
+        {"alignment",   4},
+    });
+
+    auto lightBufferLayout = OK::BlockLayout(); 
+    lightBufferLayout.pushBlockArray(pointLightStructLayout, MAX_LIGHTS);
+    lightBuffer = OK::UniformBuffer("OK_Lights", lightBufferLayout, GL_DYNAMIC_DRAW);
+
+    for (const auto& shader : shaders) {
+        auto uBlockIndex = OK::ShaderIntrospector::getUniformBlockIndex(shader->get(), lightBuffer.name());
+        if (uBlockIndex != GL_INVALID_INDEX) // As long as the block exists in the shader
+        {
+            glUniformBlockBinding(shader->get(), uBlockIndex, 0);  //link blocks of the same type to the same binding point
+            glBindBufferBase(GL_UNIFORM_BUFFER, 0, lightBuffer.get()); //reserve data range on the uniform buffer
+        }
+    }
+    
+    OK::RawTexture charmap_raw = loadPNGFile("../res/textures/charmap.png");
+    OK::RawTexture brickwall_albedo_raw = loadPNGFile("../res/textures/Brick03_col.png");
+    OK::RawTexture brickwall_nrm_raw = loadPNGFile("../res/textures/Brick03_nrm.png");
+    OK::RawTexture brickwall_spec_raw = loadPNGFile("../res/textures/Brick03_rgh_improved.png");
+    charmapAtlasTexture = OK::Texture2D(charmap_raw, { GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT });
+    brickwall[0] = OK::Texture2D(brickwall_albedo_raw);
+    brickwall[1] = OK::Texture2D(brickwall_nrm_raw, { GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT } );
+    brickwall[2] = OK::Texture2D(brickwall_spec_raw);
+    charmapAtlasTexture.bind(0); 
+    brickwall[0].bind(1);
+    brickwall[1].bind(2);
+    brickwall[2].bind(3);
 
     // Create meshes
     Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
     Mesh box = cube(boxDimensions, glm::vec2(90), true, true);
     Mesh sphere = generateSphere(1.0, 40, 40);
-    std::string text = "Test pls ignore";    
-    Mesh textMesh = generateTextGeometryBuffer(text, 32.f / text.length(), 29 * text.length());
-
-    auto ubufLayout = OK::BufferLayout<>({
-        {GL_FLOAT_MAT4, 2, GL_FALSE}
-        });
-
+    std::string text = "The cake is a lie!";
+    Mesh textMesh = generateTextGeometryBuffer(text, 32.f / 29.f, 29.f * text.length());
+    
     // Fill buffers
     unsigned int ballVAO = generateBuffer(sphere);
     unsigned int boxVAO = generateBuffer(box);
     unsigned int padVAO = generateBuffer(pad);
     unsigned int textVAO = generateBuffer(textMesh);
 
+    // TODO: have shader objects store aside UBO layout info? use shared or std140
+
+
+    ////auto lightBlock = OK::BlockLayout<OK::BufferLayoutRules::STD140>();
+    ////lightBlock.add({ { GL_FLOAT_VEC3, 2, GL_FALSE}, {GL_FLOAT, 3, GL_FALSE} }, 8);
+    //GLuint blockIndex = glGetUniformBlockIndex(texturedShader->get(), "PL[0]");
+    //GLint blockSize;
+    //GLint numBlockUniforms;
+    //glGetActiveUniformBlockiv(texturedShader->get(), blockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &blockSize);
+    //glGetActiveUniformBlockiv(texturedShader->get(), blockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &numBlockUniforms);
+
+
+    //std::cout << fmt::format("Block index: {}\nBlock size: {}.", blockIndex, blockSize) << std::endl;
+
+    //GLuint uboID;
+    //glGenBuffers(1, &uboID);
+    //glBufferData(GL_UNIFORM_BUFFER, blockSize, nullptr, GL_DYNAMIC_DRAW);
+   
+
+
     // Construct scene
     rootNode = createSceneNode();
-    boxNode = createSceneNode(SceneNodeType::GEOMETRY);
+    boxNode = createSceneNode(SceneNodeType::NORMAL_MAPPED);
     padNode = createSceneNode(SceneNodeType::GEOMETRY);
     ballNode = createSceneNode(SceneNodeType::GEOMETRY);
     textNode = createSceneNode(SceneNodeType::UI);
-    textNode->position = { 0, -10, -80 };
+    // center the text in the bottom of the view
+    textNode->position = { WINDOW_WIDTH * 0.5f - 14.5f * text.length(), 16.f, 0 }; 
 
     rootNode->children.push_back(boxNode);
     rootNode->children.push_back(padNode);
@@ -163,26 +231,26 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     textNode->VAOIndexCount = textMesh.indices.size();
 
     glm::vec3 intensities[NUM_LIGHTS];
-    std::fill(std::begin(intensities), std::end(intensities), glm::vec3{ 1,1,1 });
-    std::memcpy(std::begin(intensities), std::begin<glm::vec3>({ {1,0,0}, {0,1,0}, {0,0,1}, {0.2, 0.2, 0.2} }), 4);
-    
-    for (size_t i = 0; i < NUM_LIGHTS - 1; i++)
-    {
-        lights[i].setRadius(200);
-        lights[i].intensities = intensities[i];
-        SceneNode* lightSource = createSceneNode();
-        lightSource->lightID = i;
-        lightSource->nodeType = SceneNodeType::POINT_LIGHT;
-        lightSource->position = glm::vec3(i * 20 - (20 * (NUM_LIGHTS - 2)) * 0.5f, 2, 20);
-        padNode->children.push_back(lightSource);
-    }
-    lights[NUM_LIGHTS - 1].intensities = intensities[NUM_LIGHTS - 1];
+    std::fill(std::begin(intensities), std::end(intensities), glm::vec3{1, .8, .5}); // Set the lights to be of a yellow/orange tint
 
-    SceneNode* lightSource = createSceneNode();
-    ballNode->children.push_back(lightSource);
-    lightSource->lightID = NUM_LIGHTS - 1;
-    lightSource->nodeType = SceneNodeType::POINT_LIGHT;
-    lightSource->position = glm::vec3(0, 0, 1.5f);  // The ball will be spinning around Y, let's have this light spin around with it
+    SceneNode* lightSources[NUM_LIGHTS];
+    for (size_t i = 0; i < NUM_LIGHTS; i++)
+    {
+        lights[i].setRadius(100);
+        lights[i].intensities = intensities[i];
+        lightSources[i] = createSceneNode(SceneNodeType::POINT_LIGHT);
+        lightSources[i]->lightID = i;
+        lightSources[i]->position = glm::vec3(i * 20 - (20 * (NUM_LIGHTS - 2)) * 0.5f, 2, 20);
+    }
+    for (size_t i = 2; i < NUM_LIGHTS; i++)
+    {
+        padNode->children.push_back(lightSources[i]);
+    }
+    // Place light sourcces in the upper back corners of the box
+    lightSources[0]->position = { -85, 40, -40 };
+    lightSources[1]->position = {  85, 40, -40 };
+    boxNode->children.push_back(lightSources[0]);
+    boxNode->children.push_back(lightSources[1]);
 
     getTimeDeltaSeconds();
 
@@ -368,7 +436,7 @@ void updateFrame(GLFWwindow* window) {
         padNode->children[i]->position.y = 2 + glm::cos(offset + totalElapsedTime) * 2;
         padNode->children[i]->position.x = 2 + glm::sin(offset + totalElapsedTime) * 2;
     }
-    lights[NUM_LIGHTS - 1].intensities = { 0.5f + glm::cos(totalElapsedTime * 4) * 0.5, 0,0.5f + glm::sin(totalElapsedTime * 4) * 0.5 };
+    //lights[NUM_LIGHTS - 1].intensities = { 0.5f + glm::cos(totalElapsedTime * 4) * 0.5, 0,0.5f + glm::sin(totalElapsedTime * 4) * 0.5 };
 
 
     // Update geometry information for shadow casting
@@ -379,9 +447,13 @@ void updateFrame(GLFWwindow* window) {
         glm::vec3(boxNode->currentTransformationMatrix[3]), boxDimensions * 0.5f
     };
 
-    glUniform4fv(geometryShader->getUniformFromName("ball_info"), 1, glm::value_ptr(ballInfo));
-    //glUniformMatrix2x3fv(6, 1, GL_FALSE, glm::value_ptr(glm::mat2x3(padNode->position, padDimensions)));
-    glUniformMatrix2x3fv(geometryShader->getUniformFromName("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
+    simpleGeometryShader->activate();
+    glUniform4fv(simpleGeometryShader->getUniformFromName("ball_info"), 1, glm::value_ptr(ballInfo));
+    glUniformMatrix2x3fv(simpleGeometryShader->getUniformFromName("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
+
+    texturedShader->activate();
+    glUniform4fv(texturedShader->getUniformFromName("ball_info"), 1, glm::value_ptr(ballInfo));
+    glUniformMatrix2x3fv(texturedShader->getUniformFromName("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
 
     updateNodeTransformations(rootNode);
 }
@@ -397,13 +469,17 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
             localTransformation = glm::translate(node->position);
             if (node->lightID != -1) {
                 PointLight lightData = lights[node->lightID];
-                glUniform3fv(geometryShader->getUniformFromName(fmt::format("light[{}].position", node->lightID)),
-                    1, glm::value_ptr(glm::vec3(node->currentTransformationMatrix[3])));
-                glUniform3fv(geometryShader->getUniformFromName(fmt::format("light[{}].intensities", node->lightID)),
-                    1, glm::value_ptr(lightData.intensities));
-                glUniform1f(geometryShader->getUniformFromName(fmt::format("light[{}].constant", node->lightID)), lightData.constant);
-                glUniform1f(geometryShader->getUniformFromName(fmt::format("light[{}].linear", node->lightID)), lightData.linear);
-                glUniform1f(geometryShader->getUniformFromName(fmt::format("light[{}].quadratic", node->lightID)), lightData.quadratic);
+
+                auto packed = OK::pack_data(
+                    glm::vec4{ glm::vec3{node->currentTransformationMatrix[3]}, 0 },
+                    glm::vec4{ lightData.intensities, 1 },
+                    lightData.constant,
+                    lightData.linear,
+                    lightData.quadratic,
+                    0.0f
+                );
+
+                lightBuffer.update(sizeof(packed) * node->lightID, sizeof(packed), &packed);
             }
         }
         break;
@@ -441,7 +517,7 @@ void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar)
 
 void renderNode(SceneNode* node) {
 
-    glm::mat4 projection = glm::perspective(glm::radians(80.0f), float(windowWidth) / float(windowHeight), 0.1f, 350.f);
+    glm::mat4 projection = glm::perspective(glm::radians(80.0f), float(WINDOW_WIDTH) / float(WINDOW_HEIGHT), 0.1f, 350.f);
 
     glm::vec3 cameraPosition = glm::vec3(0, 2, -20);
 
@@ -455,16 +531,42 @@ void renderNode(SceneNode* node) {
     glm::mat4 VP = projection * cameraTransform;
     glm::mat4 MVP = VP * node->currentTransformationMatrix;
     glm::mat3 NRM = glm::transpose(glm::inverse(glm::mat3(node->currentTransformationMatrix)));
-    glUniformMatrix4fv(geometryShader->getUniformFromName("MVP"), 1, GL_FALSE, glm::value_ptr(MVP));
-    glUniformMatrix4fv(geometryShader->getUniformFromName("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-    glUniformMatrix3fv(geometryShader->getUniformFromName("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
-    glUniform3fv(geometryShader->getUniformFromName("eye"), 1, glm::value_ptr(-cameraPosition));
     switch(node->nodeType) {
         case SceneNodeType::GEOMETRY:
             if(node->vertexArrayObjectID != -1) {
+                simpleGeometryShader->activate();
+                glUniformMatrix4fv(simpleGeometryShader->getUniformFromName("MVP"), 1, GL_FALSE, glm::value_ptr(MVP));
+                glUniformMatrix4fv(simpleGeometryShader->getUniformFromName("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+                glUniformMatrix3fv(simpleGeometryShader->getUniformFromName("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
+                glUniform3fv(simpleGeometryShader->getUniformFromName("eye"), 1, glm::value_ptr(-cameraPosition));
+
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }
+            break;
+        case SceneNodeType::UI:
+            if (node->vertexArrayObjectID != -1) {
+                uiShader->activate();
+                glm::mat4 ortho = glm::ortho<float>(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT, -1, 1);
+                glUniformMatrix4fv(uiShader->getUniformFromName("MVP"), 1, GL_FALSE, glm::value_ptr(ortho * node->currentTransformationMatrix));
+                glUniformMatrix4fv(uiShader->getUniformFromName("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+                glUniformMatrix3fv(uiShader->getUniformFromName("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
+
+                glBindVertexArray(node->vertexArrayObjectID);
+                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr); 
+            }
+            break;
+        case SceneNodeType::NORMAL_MAPPED:
+            if (node->vertexArrayObjectID != -1) {
+                texturedShader->activate();
+                glUniformMatrix4fv(texturedShader->getUniformFromName("MVP"), 1, GL_FALSE, glm::value_ptr(MVP));
+                glUniformMatrix4fv(texturedShader->getUniformFromName("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+                glUniformMatrix3fv(texturedShader->getUniformFromName("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
+                glUniform3fv(texturedShader->getUniformFromName("eye"), 1, glm::value_ptr(-cameraPosition));
+                glBindVertexArray(node->vertexArrayObjectID);
+                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
+            }
+            break;
             break;
         case SceneNodeType::POINT_LIGHT: 
             break;

@@ -7,11 +7,11 @@
 #include <string>
 
 // Constants
-const int         windowWidth     = 1366;
-const int         windowHeight    = 768;
-const std::string windowTitle     = "Glowbox";
-const GLint       windowResizable = GL_FALSE;
-const int         windowSamples   = 4;
+constexpr const int         WINDOW_WIDTH     = 1366;
+constexpr const int         WINDOW_HEIGHT    = 768;
+const std::string           WINDOW_TITLE     = "Glowbox";
+constexpr const GLint       WINDOW_RESIZABLE = GL_FALSE;
+constexpr const int         WINDOW_SAMPLES   = 16;
 
 struct CommandLineOptions {
     bool enableMusic;

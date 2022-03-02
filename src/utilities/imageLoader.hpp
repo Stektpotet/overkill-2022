@@ -1,7 +1,7 @@
 #pragma once
 
 #include "lodepng.h"
-#include "overkill/Texture.hpp"
+#include "overkill/graphics_internal/Texture.hpp"
 #include <vector>
 #include <string>
 

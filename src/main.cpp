@@ -36,11 +36,11 @@ GLFWwindow* initialise()
     glfwSetErrorCallback(glfwErrorCallback);
 
     // Set additional window options
-    glfwWindowHint(GLFW_RESIZABLE, windowResizable);
-    glfwWindowHint(GLFW_SAMPLES, windowSamples);  // MSAA
+    glfwWindowHint(GLFW_RESIZABLE, WINDOW_RESIZABLE);
+    glfwWindowHint(GLFW_SAMPLES, WINDOW_SAMPLES);  // MSAA
 
     // Create window using GLFW
-    GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, windowTitle.c_str(), nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE.c_str(), nullptr, nullptr);
 
     // Ensure the window is set up correctly
     if (!window)
