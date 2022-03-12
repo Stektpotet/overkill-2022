@@ -14,7 +14,7 @@ struct OK_Light_Point {
 	float constant;
 	float linear;
 	float quadratic;
-	float alignment;
+	float _UNUSED;
 };
 
 layout(std140) uniform OK_Lights{

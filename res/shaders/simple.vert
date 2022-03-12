@@ -20,7 +20,7 @@ void main()
 {
     uv_out = uv;
     normal_out = normalize(NRM * normalize(normal));
-    TBN = mat3(
+    TBN = mat3( // Tangent space to world space
         normalize(NRM * normalize(tangent)),
         normalize(NRM * normalize(bitangent)),
         normal_out

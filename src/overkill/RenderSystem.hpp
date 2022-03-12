@@ -9,7 +9,6 @@ namespace OK
 class RenderSystem
 {
 
-    std::vector<>
 
 };
 

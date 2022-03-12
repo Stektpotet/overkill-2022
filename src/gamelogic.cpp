@@ -30,7 +30,6 @@ enum KeyFrameAction {
 
 #include <timestamps.h>
 #include <utilities/imageLoader.hpp>
-#include <overkill/graphics_internal/BufferLayout.hpp>
 #include <overkill/graphics_internal/ShaderIntrospector.hpp>
 #include <overkill/graphics_internal/UniformBuffer.hpp>
 
@@ -183,26 +182,6 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     unsigned int boxVAO = generateBuffer(box);
     unsigned int padVAO = generateBuffer(pad);
     unsigned int textVAO = generateBuffer(textMesh);
-
-    // TODO: have shader objects store aside UBO layout info? use shared or std140
-
-
-    ////auto lightBlock = OK::BlockLayout<OK::BufferLayoutRules::STD140>();
-    ////lightBlock.add({ { GL_FLOAT_VEC3, 2, GL_FALSE}, {GL_FLOAT, 3, GL_FALSE} }, 8);
-    //GLuint blockIndex = glGetUniformBlockIndex(texturedShader->get(), "PL[0]");
-    //GLint blockSize;
-    //GLint numBlockUniforms;
-    //glGetActiveUniformBlockiv(texturedShader->get(), blockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &blockSize);
-    //glGetActiveUniformBlockiv(texturedShader->get(), blockIndex, GL_UNIFORM_BLOCK_ACTIVE_UNIFORMS, &numBlockUniforms);
-
-
-    //std::cout << fmt::format("Block index: {}\nBlock size: {}.", blockIndex, blockSize) << std::endl;
-
-    //GLuint uboID;
-    //glGenBuffers(1, &uboID);
-    //glBufferData(GL_UNIFORM_BUFFER, blockSize, nullptr, GL_DYNAMIC_DRAW);
-   
-
 
     // Construct scene
     rootNode = createSceneNode();
@@ -548,6 +527,7 @@ void renderNode(SceneNode* node) {
             if (node->vertexArrayObjectID != -1) {
                 uiShader->activate();
                 glm::mat4 ortho = glm::ortho<float>(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT, -1, 1);
+                // Strictly speaking not the MVP, but this will allow us to reuse simple.vert
                 glUniformMatrix4fv(uiShader->getUniformFromName("MVP"), 1, GL_FALSE, glm::value_ptr(ortho * node->currentTransformationMatrix));
                 glUniformMatrix4fv(uiShader->getUniformFromName("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
                 glUniformMatrix3fv(uiShader->getUniformFromName("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
