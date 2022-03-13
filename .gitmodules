@@ -1,0 +1,24 @@
+[submodule "lib/glad"]
+	path = lib/glad
+	url = https://github.com/Dav1dde/glad
+[submodule "lib/glfw"]
+	path = lib/glfw
+	url = https://github.com/glfw/glfw
+[submodule "lib/glm"]
+	path = lib/glm
+	url = https://github.com/g-truc/glm
+[submodule "lib/arrrgh"]
+	path = lib/arrrgh
+	url = https://github.com/ElectricToy/arrrgh
+[submodule "lib/SFML"]
+	path = lib/SFML
+	url = https://github.com/SFML/SFML
+[submodule "lib/stb"]
+	path = lib/stb
+	url = https://github.com/nothings/stb
+[submodule "lib/lodepng"]
+	path = lib/lodepng
+	url = https://github.com/lvandeve/lodepng
+[submodule "lib/fmt"]
+	path = lib/fmt
+	url = https://github.com/fmtlib/fmt
