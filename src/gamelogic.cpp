@@ -33,7 +33,12 @@ enum KeyFrameAction {
 #include <overkill/graphics_internal/ShaderIntrospector.hpp>
 #include <overkill/graphics_internal/FrameBuffer.hpp>
 #include <overkill/ShaderSystem.hpp>
+#include <overkill/RenderSystem.hpp>
 #include <overkill/io.hpp>
+#include <overkill/ecs/ecs.hpp>
+
+#define TINYOBJLOADER_IMPLEMENTATION 
+#include <tiny_obj_loader.h>
 
 double padPositionX = 0;
 double padPositionZ = 0;
@@ -50,7 +55,8 @@ SceneNode* textNode;
 OK::UniformBuffer lightBuffer;
 OK::UniformBuffer matrixBuffer;
 
-OK::ShaderSystem shaderSystem;
+OK::ShaderSystem shaderSystem("../res/shaders");
+OK::RenderSystem renderSystem;
 
 double ballRadius = 3.0f;
 
@@ -123,9 +129,12 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     glfwSetCursorPosCallback(window, mouseCallback);
 
-    OK::ShaderProgram uiShader = shaderSystem.push("UI", { {GL_VERTEX_SHADER, "../res/shaders/simple.vert"}, {GL_FRAGMENT_SHADER, "../res/shaders/text.frag"} });
-    OK::ShaderProgram simpleGeometryShader = shaderSystem.push("simpleGeometry", { {GL_VERTEX_SHADER, "../res/shaders/simple.vert"}, {GL_FRAGMENT_SHADER, "../res/shaders/simple.frag"} });
-    OK::ShaderProgram texturedShader = shaderSystem.push("walls", { {GL_VERTEX_SHADER, "../res/shaders/simple.vert"}, {GL_FRAGMENT_SHADER, "../res/shaders/textured.frag"} });
+
+
+
+    OK::ShaderProgram uiShader = shaderSystem.push("UI", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "text"} });
+    OK::ShaderProgram simpleGeometryShader = shaderSystem.push("simpleGeometry", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "simple"} });
+    OK::ShaderProgram texturedShader = shaderSystem.push("walls", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "textured"} });
     
     auto shaders = { uiShader, simpleGeometryShader, texturedShader };
 

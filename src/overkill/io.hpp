@@ -19,20 +19,4 @@ namespace OK::IO
     bool fileToString(const std::string& filePath, std::string* outString);
 
 
-    namespace Shader
-    {
-
-    struct ShaderFiles 
-    {
-        std::unordered_map<std::string, std::string> vertex_shaders;
-        std::unordered_map<std::string, std::string> fragment_shaders;
-        std::unordered_map<std::string, std::string> geometry_shaders;
-        std::unordered_map<std::string, std::string> tess_ctrl_shaders;
-        std::unordered_map<std::string, std::string> tess_eval_shaders;
-        std::unordered_map<std::string, std::string> compute_shaders;
-    };
-
-    ShaderFiles enlistShaderFiles(const char* root);
-
-    }
 }

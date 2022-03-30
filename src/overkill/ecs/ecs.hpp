@@ -84,7 +84,7 @@ namespace OK::ECS
 			// Copy element at end into deleted element's place to maintain density
 			size_t indexOfRemovedEntity = mEntityToIndexMap[entity];
 			size_t indexOfLastElement = mSize - 1;
-			mComponentArray[indexOfRemovedEntity] = mComponentArray[indexOfLastElement];
+            mComponents[indexOfRemovedEntity] = mComponents[indexOfLastElement];
 
 			// Update map to point to moved spot
 			Entity entityOfLastElement = mIndexToEntityMap[indexOfLastElement];
@@ -149,7 +149,7 @@ namespace OK::ECS
 			assert(mComponentTypes.find(typeName) == mComponentTypes.end() && "Component already registered!");
 
 			mComponentTypes.insert({ typeName, mNextComponentType++ });
-			mComponentLists.insert({ typeName, std::make_shared<ComponentList<T>>()})
+            mComponentLists.insert({ typeName, std::make_shared<ComponentList<T>>() });
 		}
 
 		template<typename T>
@@ -203,7 +203,7 @@ namespace OK::ECS
 
 			// Create a pointer to the system and return it so it can be used externally
 			auto system = std::make_shared<T>();
-			mSystems.insert({ typeName, system });
+            mSystems.emplace(std::make_pair( typeName, system ));
 			return system;
 		}
 
@@ -249,7 +249,120 @@ namespace OK::ECS
 				}
 			}
 		}
-
-
 	};
+
+    class Coordinator
+    {
+    public:
+        void Init()
+        {
+            // Create pointers to each manager
+            mComponentManager = std::make_unique<ComponentManager>();
+            mEntityManager = std::make_unique<EntityManager>();
+            mSystemManager = std::make_unique<SystemManager>();
+        }
+
+
+        // Entity methods
+        Entity CreateEntity()
+        {
+            return mEntityManager->create();
+        }
+
+        void DestroyEntity(Entity entity)
+        {
+            mEntityManager->destroy(entity);
+
+            mComponentManager->entityDestroyed(entity);
+
+            mSystemManager->entityDestroyed(entity);
+        }
+
+
+        // Component methods
+        template<typename T>
+        void RegisterComponent()
+        {
+            mComponentManager->registerComponent<T>();
+        }
+
+        template<typename T>
+        void AddComponent(Entity entity, T component)
+        {
+            mComponentManager->addComponent<T>(entity, component);
+
+            auto signature = mEntityManager->getSignature(entity);
+            signature.set(mComponentManager->getType<T>(), true);
+            mEntityManager->setSignature(entity, signature);
+
+            mSystemManager->entitySignatureChanged(entity, signature);
+        }
+
+        template<typename T>
+        void RemoveComponent(Entity entity)
+        {
+            mComponentManager->removeComponent<T>(entity);
+
+            auto signature = mEntityManager->getSignature(entity);
+            signature.set(mComponentManager->getType<T>(), false);
+            mEntityManager->setSignature(entity, signature);
+
+            mSystemManager->entitySignatureChanged(entity, signature);
+        }
+
+        template<typename T>
+        T& GetComponent(Entity entity)
+        {
+            return mComponentManager->getComponent<T>(entity);
+        }
+
+        template<typename T>
+        ComponentType GetComponentType()
+        {
+            return mComponentManager->getType<T>();
+        }
+
+
+        // System methods
+        template<typename T>
+        std::shared_ptr<T> RegisterSystem(Signature& signature)
+        {
+            std::cout << "a\n";
+            auto registeredSystem = mSystemManager->registerSystem<T>();
+            mSystemManager->setSignature<T>(signature);
+            return registeredSystem;
+        }
+        template<typename T>
+        std::shared_ptr<T> RegisterSystem()
+        {
+            std::cout << "b\n";
+            return mSystemManager->registerSystem<T>();
+        }
+
+        template<typename T, typename TComp, typename... TCompArgs>
+        std::shared_ptr<T> RegisterSystem(Signature& signature)
+        {
+            std::cout << "c\n";
+            signature.set(GetComponentType<TComp>());
+            return RegisterSystem<T, TCompArgs...>(signature);
+        }
+
+        template<typename T, typename TComp, typename... TCompArgs>
+        std::shared_ptr<T> RegisterSystem(TComp component, TCompArgs... components)
+        {
+            std::cout << "d\n";
+            return RegisterSystem<T, TComp, TCompArgs...>(Signature());
+        }
+
+        template<typename T>
+        void SetSystemSignature(Signature signature)
+        {
+            mSystemManager->SetSignature<T>(signature);
+        }
+
+    private:
+        std::unique_ptr<ComponentManager> mComponentManager;
+        std::unique_ptr<EntityManager> mEntityManager;
+        std::unique_ptr<SystemManager> mSystemManager;
+    };
 }

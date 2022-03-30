@@ -99,14 +99,14 @@ UnlinkedShaderProgram::UnlinkedShaderProgram()
     id = glCreateProgram();
 }
 
-UnlinkedShaderProgram::UnlinkedShaderProgram(const ShaderSources & src)
-{
-    id = glCreateProgram();
-    for (size_t i = 0; i < src.data.size(); i++)
-    {
-        attachShader(src.data[i].data(), src.shaderTypes[i]);
-    }
-}
+//UnlinkedShaderProgram::UnlinkedShaderProgram(const ShaderSources & src)
+//{
+//    id = glCreateProgram();
+//    for (size_t i = 0; i < src.data.size(); i++)
+//    {
+//        attachShader(src.data[i].data(), src.shaderTypes[i]);
+//    }
+//}
 
 GLuint UnlinkedShaderProgram::attachShader(std::string_view src, GLenum shaderType)
 {
@@ -128,36 +128,6 @@ GLuint UnlinkedShaderProgram::attachShader(std::string_view src, GLenum shaderTy
     glAttachShader(id, shaderId);
     glDeleteShader(shaderId);               //it may be that I'm supposed to call glDetachShader() instead.. not sure for now tho
     return 0;
-}
-
-ShaderSources::ShaderSources(std::initializer_list<std::pair<GLenum, const char*>> sourceFiles)
-{
-    for (const auto&[type, filePath] : sourceFiles) 
-    {
-        switch (type)
-        {
-        case GL_VERTEX_SHADER:
-            set<GL_VERTEX_SHADER>(filePath);
-            break;
-        case GL_FRAGMENT_SHADER:
-            set<GL_FRAGMENT_SHADER>(filePath); 
-            break;
-        case GL_GEOMETRY_SHADER:
-            set<GL_GEOMETRY_SHADER>(filePath); 
-            break;
-        case GL_TESS_CONTROL_SHADER:
-            set<GL_TESS_CONTROL_SHADER>(filePath);
-            break;
-        case GL_TESS_EVALUATION_SHADER:
-            set<GL_TESS_EVALUATION_SHADER>(filePath);
-            break;
-        case GL_COMPUTE_SHADER:
-            set<GL_COMPUTE_SHADER>(filePath);
-            break;
-        default:
-            break;  
-        }
-    }
 }
 
 }

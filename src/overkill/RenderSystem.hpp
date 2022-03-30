@@ -3,6 +3,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <memory>
 
 #include "overkill/graphics_internal/VertexArray.hpp"
 #include "overkill/graphics_internal/VertexBuffer.hpp"
@@ -11,6 +12,13 @@
 
 namespace OK
 {
+    
+struct Rendered 
+{
+    VertexBuffer vbo;
+    IndexBuffer<std::uint16_t> ibo;
+};
+
 
 class RenderGroup 
 {
@@ -29,16 +37,9 @@ public:
     }
 };
 
-class Rendered 
-{
-    VertexBuffer vbo;
-    IndexBuffer<std::uint16_t> ibo;
-    
-};
-
-
 class RenderSystem
 {
+public:
     std::vector<RenderGroup> renderQueue;
 };
 

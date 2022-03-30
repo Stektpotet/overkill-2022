@@ -67,6 +67,12 @@ add_subdirectory(lib/SFML)
 #
 add_subdirectory (lib/fmt)
 
+
+#
+# Add tinyobjloader
+#
+add_subdirectory (lib/tinyobjloader)
+
 #
 # GLAD
 #
@@ -89,6 +95,7 @@ include_directories (src/
                      lib/glm/
                      lib/stb/
                      lib/arrrgh/
+                     lib/tinyobjloader
                      lib/SFML/include/)
 
 
