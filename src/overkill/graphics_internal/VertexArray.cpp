@@ -1,4 +1,5 @@
 #include "VertexArray.hpp"
+
 namespace OK 
 {
     VertexArray::VertexArray()

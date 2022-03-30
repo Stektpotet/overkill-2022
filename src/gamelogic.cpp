@@ -150,6 +150,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     OK::RawTexture brickwall_albedo_raw = loadPNGFile("../res/textures/Brick03_col.png");
     OK::RawTexture brickwall_nrm_raw = loadPNGFile("../res/textures/Brick03_nrm.png");
     OK::RawTexture brickwall_spec_raw = loadPNGFile("../res/textures/Brick03_rgh.png");
+
     charmapAtlasTexture = OK::Texture2D(charmap_raw, { GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT });
     brickwall[0] = OK::Texture2D(brickwall_albedo_raw);
     brickwall[1] = OK::Texture2D(brickwall_nrm_raw, { GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT } );
@@ -223,7 +224,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     getTimeDeltaSeconds();
 
     std::cout << fmt::format("Initialized scene with {} SceneNodes.", totalChildren(rootNode)) << std::endl;
-        
+
     std::cout << "Ready. Click to start!" << std::endl;
 }
 
@@ -425,6 +426,7 @@ void updateFrame(GLFWwindow* window) {
     glUniform4fv(texturedShader->getUniformLocation("ball_info"), 1, glm::value_ptr(ballInfo));
     glUniformMatrix2x3fv(texturedShader->getUniformLocation("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
 
+
     updateNodeTransformations(rootNode);
 }
 
@@ -537,6 +539,7 @@ void renderNode(SceneNode* node) {
                 glUniformMatrix4fv(texturedShader->getUniformLocation("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
                 glUniformMatrix3fv(texturedShader->getUniformLocation("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
                 glUniform3fv(texturedShader->getUniformLocation("eye"), 1, glm::value_ptr(-cameraPosition));
+
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }

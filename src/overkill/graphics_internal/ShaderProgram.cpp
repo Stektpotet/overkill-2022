@@ -65,7 +65,8 @@ ShaderProgram::destroy()
 
 void
 ShaderProgram::addUniformLocation( const char* name )
-{	// Compiler says there is no try_emplace back for unorderer maps. According to stack overflow, it wouldn't make sense to have one (https://stackoverflow.com/questions/53772218/why-is-try-emplace-not-implemented-for-stdmultimap).
+{	// Compiler says there is no try_emplace back for unorderer maps. According to stack overflow, 
+    // it wouldn't make sense to have one (https://stackoverflow.com/questions/53772218/why-is-try-emplace-not-implemented-for-stdmultimap).
 	uniforms.emplace(name, glGetUniformLocation(id, name));
 }
 

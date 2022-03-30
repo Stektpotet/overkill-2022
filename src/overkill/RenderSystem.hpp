@@ -40,7 +40,6 @@ class Rendered
 class RenderSystem
 {
     std::vector<RenderGroup> renderQueue;
-
 };
 
 }

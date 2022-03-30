@@ -68,5 +68,3 @@ SceneNode* createSceneNode(SceneNodeType nodeType = SceneNodeType::NONE);
 void addChild(SceneNode* parent, SceneNode* child);
 void printNode(SceneNode* node);
 int totalChildren(SceneNode* parent);
-
-// For more details, see SceneGraph.cpp.

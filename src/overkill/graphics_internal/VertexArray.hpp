@@ -4,6 +4,7 @@
 #include <set>
 
 #include "VertexLayout.hpp"
+
 namespace OK
 {
 

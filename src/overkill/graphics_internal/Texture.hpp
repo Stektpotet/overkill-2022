@@ -46,6 +46,7 @@ namespace OK
     };
 
     class TextureBase // TODO: Remove TextureBase -> we only really need Texture<TextureType>
+
     {
     protected:
         GLuint id;
@@ -66,6 +67,7 @@ namespace OK
 
         // TODO: Do we need these to be virtual?
         virtual void bind(GLuint slot = 0) const = 0; 
+
         virtual void unbind() const = 0;
         virtual void setSamplingOptions(TextureSamplingOptions options) = 0;
         virtual RawTexture fetchRaw() const = 0;
