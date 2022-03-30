@@ -5,9 +5,9 @@ namespace OK
     BlockLayout::BlockLayout(const char* name, std::initializer_list<std::pair<const char*, int>> elements)
         : m_blockSize{ 0 }, m_name{ name }, m_vars{}
     {
-        for (const auto& const pair : elements) {
-            m_vars[pair.first] = m_blockSize;
-            m_blockSize += pair.second;
+        for (const auto& [element_name, bytesize] : elements) {
+            m_vars[element_name] = m_blockSize;
+            m_blockSize += bytesize;
         }
     }
 

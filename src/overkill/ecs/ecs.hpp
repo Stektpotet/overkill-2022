@@ -10,7 +10,7 @@
 
 // INSPIRED BY https://austinmorlan.com/posts/entity_component_system/#the-component
 
-namespace OK { namespace ECS
+namespace OK::ECS
 {
 
 	using Entity = std::uint32_t;			// MAX 4_294_967_296 ENTITIES
@@ -252,4 +252,4 @@ namespace OK { namespace ECS
 
 
 	};
-}}
+}

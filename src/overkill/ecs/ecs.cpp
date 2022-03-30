@@ -1,7 +1,7 @@
 
 #include "ecs.hpp"
 
-namespace OK { namespace ECS 
+namespace OK::ECS 
 {
 
 EntityManager::EntityManager() : mAvailableEntities{}, mSignatures{}, mActiveEntities{ 0u }
@@ -41,4 +41,4 @@ EntityManager::getSignature(Entity entity)
 	assert(entity < MAX_ENTITIES && "Entity out of range.");
 	return mSignatures[entity];
 }
-}}
+}

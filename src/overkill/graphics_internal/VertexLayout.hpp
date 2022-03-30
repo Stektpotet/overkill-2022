@@ -3,6 +3,8 @@
 #include <vector>
 
 #include "VertexBuffer.hpp"
+namespace OK
+{
 
 struct Attribute 
 {
@@ -90,3 +92,5 @@ public:
 protected:
     inline void addStride(GLuint byteSize) final;
 };
+
+}

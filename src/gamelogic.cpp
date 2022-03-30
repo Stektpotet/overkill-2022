@@ -31,7 +31,9 @@ enum KeyFrameAction {
 #include <timestamps.h>
 #include <utilities/imageLoader.hpp>
 #include <overkill/graphics_internal/ShaderIntrospector.hpp>
-#include <overkill/graphics_internal/UniformBuffer.hpp>
+#include <overkill/graphics_internal/FrameBuffer.hpp>
+#include <overkill/ShaderSystem.hpp>
+#include <overkill/io.hpp>
 
 double padPositionX = 0;
 double padPositionZ = 0;
@@ -48,6 +50,8 @@ SceneNode* textNode;
 OK::UniformBuffer lightBuffer;
 OK::UniformBuffer matrixBuffer;
 
+OK::ShaderSystem shaderSystem;
+
 double ballRadius = 3.0f;
 
 const int NUM_LIGHTS = 3;
@@ -55,9 +59,7 @@ const int NUM_LIGHTS = 3;
 
 // These are heap allocated, because they should not be initialised at the start of the program
 sf::SoundBuffer* buffer;
-Gloom::Shader* simpleGeometryShader;
-Gloom::Shader* texturedShader;
-Gloom::Shader* uiShader;
+
 sf::Sound* sound;
 OK::Texture2D charmapAtlasTexture;
 OK::Texture2D brickwall[3];
@@ -121,46 +123,33 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     glfwSetCursorPosCallback(window, mouseCallback);
 
-    uiShader = new Gloom::Shader();
-    uiShader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/text.frag");
-    uiShader->isValid();
-
-    simpleGeometryShader = new Gloom::Shader();
-    simpleGeometryShader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/simple.frag");
-    simpleGeometryShader->isValid();
-
-    texturedShader = new Gloom::Shader();
-    texturedShader->makeBasicShader("../res/shaders/simple.vert", "../res/shaders/textured.frag");
-    texturedShader->isValid();
-
+    OK::ShaderProgram uiShader = shaderSystem.push("UI", { {GL_VERTEX_SHADER, "../res/shaders/simple.vert"}, {GL_FRAGMENT_SHADER, "../res/shaders/text.frag"} });
+    OK::ShaderProgram simpleGeometryShader = shaderSystem.push("simpleGeometry", { {GL_VERTEX_SHADER, "../res/shaders/simple.vert"}, {GL_FRAGMENT_SHADER, "../res/shaders/simple.frag"} });
+    OK::ShaderProgram texturedShader = shaderSystem.push("walls", { {GL_VERTEX_SHADER, "../res/shaders/simple.vert"}, {GL_FRAGMENT_SHADER, "../res/shaders/textured.frag"} });
+    
     auto shaders = { uiShader, simpleGeometryShader, texturedShader };
 
-    auto pointLightStructLayout = OK::BlockLayout("light", {
-        {"position",    16},
-        {"intensities", 16},
-        {"constant",    4},
-        {"linear",      4},
-        {"quadratic",   4},
-        {"alignment",   4},
-    });
+    OK::BlockLayout lightBufferLayout;
+    lightBufferLayout.pushBlockArray(
+        OK::BlockLayout("light", {
+            {"position",    16},
+            {"intensities", 16},
+            {"constant",    4},
+            {"linear",      4},
+            {"quadratic",   4},
+            {"alignment",   4},
+        }), 
+        MAX_LIGHTS
+    );
 
-    auto lightBufferLayout = OK::BlockLayout(); 
-    lightBufferLayout.pushBlockArray(pointLightStructLayout, MAX_LIGHTS);
-    lightBuffer = OK::UniformBuffer("OK_Lights", lightBufferLayout, GL_DYNAMIC_DRAW);
+    lightBuffer = shaderSystem.makeUniformBuffer<GL_DYNAMIC_DRAW>("OK_Lights", lightBufferLayout);
 
-    for (const auto& shader : shaders) {
-        auto uBlockIndex = OK::ShaderIntrospector::getUniformBlockIndex(shader->get(), lightBuffer.name());
-        if (uBlockIndex != GL_INVALID_INDEX) // As long as the block exists in the shader
-        {
-            glUniformBlockBinding(shader->get(), uBlockIndex, 0);  //link blocks of the same type to the same binding point
-            glBindBufferBase(GL_UNIFORM_BUFFER, 0, lightBuffer.get()); //reserve data range on the uniform buffer
-        }
-    }
-    
+    shaderSystem.bindUniformBlocks();
+
     OK::RawTexture charmap_raw = loadPNGFile("../res/textures/charmap.png");
     OK::RawTexture brickwall_albedo_raw = loadPNGFile("../res/textures/Brick03_col.png");
     OK::RawTexture brickwall_nrm_raw = loadPNGFile("../res/textures/Brick03_nrm.png");
-    OK::RawTexture brickwall_spec_raw = loadPNGFile("../res/textures/Brick03_rgh_improved.png");
+    OK::RawTexture brickwall_spec_raw = loadPNGFile("../res/textures/Brick03_rgh.png");
     charmapAtlasTexture = OK::Texture2D(charmap_raw, { GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT });
     brickwall[0] = OK::Texture2D(brickwall_albedo_raw);
     brickwall[1] = OK::Texture2D(brickwall_nrm_raw, { GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT } );
@@ -234,7 +223,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     getTimeDeltaSeconds();
 
     std::cout << fmt::format("Initialized scene with {} SceneNodes.", totalChildren(rootNode)) << std::endl;
-
+        
     std::cout << "Ready. Click to start!" << std::endl;
 }
 
@@ -426,13 +415,15 @@ void updateFrame(GLFWwindow* window) {
         glm::vec3(boxNode->currentTransformationMatrix[3]), boxDimensions * 0.5f
     };
 
-    simpleGeometryShader->activate();
-    glUniform4fv(simpleGeometryShader->getUniformFromName("ball_info"), 1, glm::value_ptr(ballInfo));
-    glUniformMatrix2x3fv(simpleGeometryShader->getUniformFromName("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
+    auto simpleGeometryShader = shaderSystem.get("simpleGeometry");
+    simpleGeometryShader->bind();
+    glUniform4fv(simpleGeometryShader->getUniformLocation("ball_info"), 1, glm::value_ptr(ballInfo));
+    glUniformMatrix2x3fv(simpleGeometryShader->getUniformLocation("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
 
-    texturedShader->activate();
-    glUniform4fv(texturedShader->getUniformFromName("ball_info"), 1, glm::value_ptr(ballInfo));
-    glUniformMatrix2x3fv(texturedShader->getUniformFromName("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
+    auto texturedShader = shaderSystem.get("walls");
+    texturedShader->bind();
+    glUniform4fv(texturedShader->getUniformLocation("ball_info"), 1, glm::value_ptr(ballInfo));
+    glUniformMatrix2x3fv(texturedShader->getUniformLocation("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
 
     updateNodeTransformations(rootNode);
 }
@@ -513,11 +504,12 @@ void renderNode(SceneNode* node) {
     switch(node->nodeType) {
         case SceneNodeType::GEOMETRY:
             if(node->vertexArrayObjectID != -1) {
-                simpleGeometryShader->activate();
-                glUniformMatrix4fv(simpleGeometryShader->getUniformFromName("MVP"), 1, GL_FALSE, glm::value_ptr(MVP));
-                glUniformMatrix4fv(simpleGeometryShader->getUniformFromName("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-                glUniformMatrix3fv(simpleGeometryShader->getUniformFromName("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
-                glUniform3fv(simpleGeometryShader->getUniformFromName("eye"), 1, glm::value_ptr(-cameraPosition));
+                auto simpleGeometryShader = shaderSystem.get("simpleGeometry");
+                simpleGeometryShader->bind();
+                glUniformMatrix4fv(simpleGeometryShader->getUniformLocation("MVP"), 1, GL_FALSE, glm::value_ptr(MVP));
+                glUniformMatrix4fv(simpleGeometryShader->getUniformLocation("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+                glUniformMatrix3fv(simpleGeometryShader->getUniformLocation("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
+                glUniform3fv(simpleGeometryShader->getUniformLocation("eye"), 1, glm::value_ptr(-cameraPosition));
 
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
@@ -525,12 +517,13 @@ void renderNode(SceneNode* node) {
             break;
         case SceneNodeType::UI:
             if (node->vertexArrayObjectID != -1) {
-                uiShader->activate();
+                auto uiShader = shaderSystem.get("UI");
+                uiShader->bind();
                 glm::mat4 ortho = glm::ortho<float>(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT, -1, 1);
                 // Strictly speaking not the MVP, but this will allow us to reuse simple.vert
-                glUniformMatrix4fv(uiShader->getUniformFromName("MVP"), 1, GL_FALSE, glm::value_ptr(ortho * node->currentTransformationMatrix));
-                glUniformMatrix4fv(uiShader->getUniformFromName("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-                glUniformMatrix3fv(uiShader->getUniformFromName("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
+                glUniformMatrix4fv(uiShader->getUniformLocation("MVP"), 1, GL_FALSE, glm::value_ptr(ortho * node->currentTransformationMatrix));
+                glUniformMatrix4fv(uiShader->getUniformLocation("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+                glUniformMatrix3fv(uiShader->getUniformLocation("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
 
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr); 
@@ -538,11 +531,12 @@ void renderNode(SceneNode* node) {
             break;
         case SceneNodeType::NORMAL_MAPPED:
             if (node->vertexArrayObjectID != -1) {
-                texturedShader->activate();
-                glUniformMatrix4fv(texturedShader->getUniformFromName("MVP"), 1, GL_FALSE, glm::value_ptr(MVP));
-                glUniformMatrix4fv(texturedShader->getUniformFromName("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-                glUniformMatrix3fv(texturedShader->getUniformFromName("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
-                glUniform3fv(texturedShader->getUniformFromName("eye"), 1, glm::value_ptr(-cameraPosition));
+                auto texturedShader = shaderSystem.get("walls");
+                texturedShader->bind();
+                glUniformMatrix4fv(texturedShader->getUniformLocation("MVP"), 1, GL_FALSE, glm::value_ptr(MVP));
+                glUniformMatrix4fv(texturedShader->getUniformLocation("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
+                glUniformMatrix3fv(texturedShader->getUniformLocation("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
+                glUniform3fv(texturedShader->getUniformLocation("eye"), 1, glm::value_ptr(-cameraPosition));
                 glBindVertexArray(node->vertexArrayObjectID);
                 glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
             }

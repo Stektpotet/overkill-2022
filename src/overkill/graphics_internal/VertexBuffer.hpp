@@ -2,7 +2,8 @@
 #include <vector>
 #include <initializer_list>
 #include <glad/glad.h>
-
+namespace OK
+{
 class VertexBuffer 
 {
 private:
@@ -40,3 +41,5 @@ public:
 
 
 };
+
+}

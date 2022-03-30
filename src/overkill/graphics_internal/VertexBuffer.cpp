@@ -1,4 +1,6 @@
 #include "VertexBuffer.hpp"
+namespace OK
+{
 
 VertexBuffer::VertexBuffer(const GLsizeiptr size, const void * data /*= nullptr*/)
 {
@@ -39,4 +41,6 @@ auto
 VertexBuffer::restore(GLuint id) -> VertexBuffer
 {
     return VertexBuffer(id);
+}
+
 }

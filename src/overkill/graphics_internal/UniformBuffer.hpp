@@ -124,7 +124,7 @@ public:
         return m_name;
     } 
     
-    inline std::string name()  const
+    inline std::string_view name()  const
     {
         return m_name;
     }

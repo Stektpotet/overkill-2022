@@ -4,6 +4,8 @@
 #include <set>
 
 #include "VertexLayout.hpp"
+namespace OK
+{
 
 class VertexArray
 {
@@ -34,3 +36,5 @@ private:
 	//list layouts, let buffers subscribe to one of them
 	//std::vector<VertexLayout> layouts; 
 };
+
+}

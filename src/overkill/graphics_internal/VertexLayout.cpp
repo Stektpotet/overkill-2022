@@ -1,5 +1,6 @@
 #include "VertexLayout.hpp"
-
+namespace OK
+{
 ContinuousVertexLayout::ContinuousVertexLayout(
     std::initializer_list<Attribute> attributes
 ) : VertexLayout{ attributes }
@@ -50,4 +51,6 @@ void VertexLayout::applyToBuffer(const VertexBuffer& buffer)
         offset += attrib.size;
         i++;
     }
+}
+
 }

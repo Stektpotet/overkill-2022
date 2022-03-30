@@ -1,6 +1,8 @@
 #pragma once
 #include <glad/glad.h>
 
+namespace OK
+{
 
 template<typename TIndex>
 class IndexBuffer 
@@ -42,3 +44,5 @@ public:
     }
 	const GLsizeiptr count;
 };
+
+}

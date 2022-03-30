@@ -1,6 +1,9 @@
 #include "ShaderProgram.hpp"
 
-ShaderProgram::ShaderProgram(GLuint ID) : id(ID)
+namespace OK
+{
+
+ShaderProgram::ShaderProgram(UnlinkedShaderProgram unlinked) : id(unlinked.id)
 {
 	GLint variableCount;
 	GLint maxNameLength;
@@ -9,7 +12,6 @@ ShaderProgram::ShaderProgram(GLuint ID) : id(ID)
 	glGetProgramiv(id, GL_ACTIVE_ATTRIBUTES, &variableCount);
 	// Read the length of the longest active uniform name.
 	glGetProgramiv(id, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxNameLength);
-
 
 	std::string name;
 	name.resize(maxNameLength);
@@ -40,15 +42,14 @@ ShaderProgram::ShaderProgram(GLuint ID) : id(ID)
 	}
 }
 
-
 void
-ShaderProgram::bind()
+ShaderProgram::bind() const
 {
 	glUseProgram(id);
 }
 
 void 
-ShaderProgram::unbind()
+ShaderProgram::unbind() const
 {
 	glUseProgram(0);
 }
@@ -90,4 +91,72 @@ ShaderProgram::getAttributeLocation( const char* name ) const
 	if (element != attributes.end())
 		return element->second;
 	return -1;
+}
+
+UnlinkedShaderProgram::UnlinkedShaderProgram()
+{
+    id = glCreateProgram();
+}
+
+UnlinkedShaderProgram::UnlinkedShaderProgram(const ShaderSources & src)
+{
+    id = glCreateProgram();
+    for (size_t i = 0; i < src.data.size(); i++)
+    {
+        attachShader(src.data[i].data(), src.shaderTypes[i]);
+    }
+}
+
+GLuint UnlinkedShaderProgram::attachShader(std::string_view src, GLenum shaderType)
+{
+    if (src.empty())
+        return 0;
+
+    GLenum err = 0;
+    GLuint shaderId = glCreateShader(shaderType);
+
+    const char* src_data = src.data();
+
+    glShaderSource(shaderId, 1, &src_data, nullptr);
+    glCompileShader(shaderId);
+
+    err = ShaderIntrospector::checkCompileStatus(shaderId);
+    if (err)
+        return err;
+
+    glAttachShader(id, shaderId);
+    glDeleteShader(shaderId);               //it may be that I'm supposed to call glDetachShader() instead.. not sure for now tho
+    return 0;
+}
+
+ShaderSources::ShaderSources(std::initializer_list<std::pair<GLenum, const char*>> sourceFiles)
+{
+    for (const auto&[type, filePath] : sourceFiles) 
+    {
+        switch (type)
+        {
+        case GL_VERTEX_SHADER:
+            set<GL_VERTEX_SHADER>(filePath);
+            break;
+        case GL_FRAGMENT_SHADER:
+            set<GL_FRAGMENT_SHADER>(filePath); 
+            break;
+        case GL_GEOMETRY_SHADER:
+            set<GL_GEOMETRY_SHADER>(filePath); 
+            break;
+        case GL_TESS_CONTROL_SHADER:
+            set<GL_TESS_CONTROL_SHADER>(filePath);
+            break;
+        case GL_TESS_EVALUATION_SHADER:
+            set<GL_TESS_EVALUATION_SHADER>(filePath);
+            break;
+        case GL_COMPUTE_SHADER:
+            set<GL_COMPUTE_SHADER>(filePath);
+            break;
+        default:
+            break;  
+        }
+    }
+}
+
 }

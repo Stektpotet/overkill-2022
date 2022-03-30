@@ -45,26 +45,27 @@ namespace OK
         {}
     };
 
-    class TextureBase
+    class TextureBase // TODO: Remove TextureBase -> we only really need Texture<TextureType>
     {
     protected:
         GLuint id;
         uint16_t width, height, channels;
+        TextureSamplingOptions samplingOptions;
     public:
         TextureBase() = default;
-        TextureBase(uint16_t width, uint16_t height, uint16_t channels);
+        TextureBase(uint16_t width, uint16_t height, uint16_t channels, TextureSamplingOptions options = TextureSamplingOptions());
 
         inline void clean() { glDeleteTextures(1, &id); }
 
-        inline bool valid() { return id != 0; }
-        inline GLuint getID() { return id; }
+        inline const bool valid() const { return id != 0; }
+        inline const GLuint getID() const { return id; }
 
-        inline uint16_t getWidth() { return width; }
-        inline uint16_t getHeight() { return height; }
-        inline uint16_t getChannels() { return channels; }
+        inline const uint16_t const getWidth() { return width; }
+        inline const uint16_t const getHeight() { return height; }
+        inline const uint16_t const getChannels() { return channels; }
 
-
-        virtual void bind(GLuint slot = 0) const = 0;
+        // TODO: Do we need these to be virtual?
+        virtual void bind(GLuint slot = 0) const = 0; 
         virtual void unbind() const = 0;
         virtual void setSamplingOptions(TextureSamplingOptions options) = 0;
         virtual RawTexture fetchRaw() const = 0;
@@ -75,8 +76,15 @@ namespace OK
     {
     protected:
     public:
-        Texture() = default;
+        Texture() = default; //TODO: can we maybe put the sampling options into base?
+        Texture(uint16_t width, uint16_t height, uint16_t channels, TextureSamplingOptions options = TextureSamplingOptions())
+            : TextureBase(width, height, channels) {
 
+        }
+
+        /// <summary>
+        /// Create a texture object filled with the data passed
+        /// </summary>
         Texture(RawTexture raw, TextureSamplingOptions options = TextureSamplingOptions())
             : TextureBase(raw.width, raw.height, raw.channels)
         {
