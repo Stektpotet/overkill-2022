@@ -31,3 +31,9 @@
 [submodule "lib/fmt"]
 	path = lib/fmt
 	url = https://github.com/fmtlib/fmt.git	
+[submodule "lib/tinyobjloader"]
+	path = lib/tinyobjloader
+	url = https://github.com/tinyobjloader/tinyobjloader.git
+[submodule "lib/tinygltf"]
+	path = lib/tinygltf
+	url = https://github.com/syoyo/tinygltf.git

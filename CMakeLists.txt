@@ -1,8 +1,10 @@
+
+project (glowbox)
+
 #
 # Specify minimum CMake version and project name
 #
 cmake_minimum_required(VERSION 3.6)
-project (glowbox)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "") # nice for language servers
 
 #
@@ -11,21 +13,21 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "") # nice for language serv
 
 find_program(PYTHON_3_LOCATION py)
 if(NOT "${PYTHON_3_LOCATION}" STREQUAL "PYTHON_3_LOCATION-NOTFOUND") # windows shim
-	execute_process(COMMAND py -3 --version RESULT_VARIABLE has_python_3)
-	if("${has_python_3}" STREQUAL "0")
-		set (PYTHON_CMD py -3)
-	else()
-		set (PYTHON_CMD py) # may use python 2
-	endif()
+    execute_process(COMMAND py -3 --version RESULT_VARIABLE has_python_3)
+    if("${has_python_3}" STREQUAL "0")
+        set (PYTHON_CMD py -3)
+    else()
+        set (PYTHON_CMD py) # may use python 2
+    endif()
 else()
     find_program(PYTHON_3_LOCATION python3)
     if(NOT "${PYTHON_3_LOCATION}" STREQUAL "PYTHON_3_LOCATION-NOTFOUND") # windows shim
-    	set (PYTHON_CMD python3)
+        set (PYTHON_CMD python3)
     else()
-    	set (PYTHON_CMD python)
+        set (PYTHON_CMD python)
     endif()
 endif()
-message("spis meg ${PYTHON_CMD}")
+message("Python command: ${PYTHON_CMD}")
 
 #
 # CMake setup
@@ -78,11 +80,11 @@ add_subdirectory (lib/tinyobjloader)
 #
 if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/lib/glad/include)
     message("Generating glad library files, using ${PYTHON_CMD}")
-	execute_process(
-		COMMAND ${PYTHON_CMD} -m glad --profile core --out-path . --generator c --spec gl
-		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/glad
-	)
-	message("Finished generating glad library files")
+    execute_process(
+        COMMAND ${PYTHON_CMD} -m glad --profile core --out-path . --generator c --spec gl
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/glad
+    )
+    message("Finished generating glad library files")
 endif()
 
 #
@@ -96,6 +98,7 @@ include_directories (src/
                      lib/stb/
                      lib/arrrgh/
                      lib/tinyobjloader
+                     lib/tinygltf
                      lib/SFML/include/)
 
 
@@ -103,7 +106,7 @@ include_directories (src/
 # Add files
 #
 file (GLOB         VENDORS_SOURCES lib/glad/src/glad.c
-								   lib/lodepng/lodepng.cpp)
+                                   lib/lodepng/lodepng.cpp)
 file (GLOB_RECURSE PROJECT_HEADERS src/*.hpp
                                    src/*.h)
 file (GLOB_RECURSE PROJECT_SOURCES src/*.cpp

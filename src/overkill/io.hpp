@@ -1,9 +1,16 @@
 #pragma once
-#include <string>
-#include <vector>
-#include <unordered_map>
+
 #include <fstream>
 #include <filesystem>
+#include <iostream>
+#include <string>
+
+#include <vector>
+#include <unordered_map>
+#include <tiny_obj_loader.h>
+#include <tiny_gltf.h>
+
+#include <overkill/scene/Components/Transform.hpp>
 
 namespace OK::IO
 {
@@ -13,10 +20,11 @@ namespace OK::IO
 /// <summary>
 /// reads the <paramref name="file"/> into <paramref name="outString"/>
 /// </summary>
-/// <param name="file">the path of the file to read</param>
-/// <param name="outString">the string to be filled</param>
+/// <param name="file_path">the path of the file to read</param>
+/// <param name="out_string">the string to be filled</param>
 /// <returns> true when successful, false when unsuccessful </returns>
-    bool fileToString(const std::string& filePath, std::string* outString);
+    bool read_file_to_string(const std::string_view file_path, std::string* out_string);
 
-
+    bool read_obj_into_scene(const std::string_view file_path, OK::Transform& parent);
+    bool read_gltf_into_scene(const std::string_view file_path, OK::Transform& parent);
 }

@@ -13,7 +13,7 @@
 namespace OK
 {
     
-struct Rendered 
+struct Rendered
 {
     VertexBuffer vbo;
     IndexBuffer<std::uint16_t> ibo;
@@ -25,10 +25,10 @@ class RenderGroup
     VertexArray vao;
     ShaderProgram program;
 
-    std::vector<Rendered> rendered_items;
+    std::vector<std::shared_ptr<Rendered>> rendered_items;
 
 public:
-    void add(Rendered item);
+    //void add(Rendered item);
 
     void bind() const
     {
@@ -40,7 +40,7 @@ public:
 class RenderSystem
 {
 public:
-    std::vector<RenderGroup> renderQueue;
+    std::vector<std::unique_ptr<RenderGroup>> renderQueue;
 };
 
 }

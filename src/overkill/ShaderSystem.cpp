@@ -53,22 +53,22 @@ namespace OK
         switch (type)
         {
         case GL_VERTEX_SHADER:
-            success = IO::fileToString(vertex_shaders[name], str);
+            success = IO::read_file_to_string(vertex_shaders[name], str);
             break;
         case GL_FRAGMENT_SHADER:
-            success = IO::fileToString(fragment_shaders[name], str);
+            success = IO::read_file_to_string(fragment_shaders[name], str);
             break;
         case GL_GEOMETRY_SHADER:
-            success = IO::fileToString(geometry_shaders[name], str);
+            success = IO::read_file_to_string(geometry_shaders[name], str);
             break;
         case GL_TESS_CONTROL_SHADER:
-            success = IO::fileToString(tess_ctrl_shaders[name], str);
+            success = IO::read_file_to_string(tess_ctrl_shaders[name], str);
             break;
         case GL_TESS_EVALUATION_SHADER:
-            success = IO::fileToString(tess_eval_shaders[name], str);
+            success = IO::read_file_to_string(tess_eval_shaders[name], str);
             break;
         case GL_COMPUTE_SHADER:
-            success = IO::fileToString(compute_shaders[name], str);
+            success = IO::read_file_to_string(compute_shaders[name], str);
             break;
         default:
             break;

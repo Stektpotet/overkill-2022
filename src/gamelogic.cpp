@@ -2,22 +2,26 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 #include <SFML/Audio/SoundBuffer.hpp>
-#include <utilities/shader.hpp>
+
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#define GLM_ENABLE_EXPERIMENTAL
+#endif
+
 #include <glm/vec3.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtc/random.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 #include <utilities/timeutils.h>
 #include <utilities/mesh.h>
 #include <utilities/shapes.h>
 #include <utilities/glutils.h>
+#include <utilities/shader.hpp>
 #include <SFML/Audio/Sound.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <fmt/format.h>
 #include "gamelogic.h"
 #include "sceneGraph.hpp"
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/transform.hpp>
-#include <glm/gtc/random.hpp>
 
 
 #include "utilities/imageLoader.hpp"
@@ -34,10 +38,13 @@ enum KeyFrameAction {
 #include <overkill/graphics_internal/FrameBuffer.hpp>
 #include <overkill/ShaderSystem.hpp>
 #include <overkill/RenderSystem.hpp>
+#include <overkill/scene/Scene.hpp>
+#include <overkill/scene/Components/Transform.hpp>
 #include <overkill/io.hpp>
-#include <overkill/ecs/ecs.hpp>
 
+#ifndef TINYOBJLOADER_IMPLEMENTATION
 #define TINYOBJLOADER_IMPLEMENTATION 
+#endif
 #include <tiny_obj_loader.h>
 
 double padPositionX = 0;
@@ -130,14 +137,17 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     glfwSetCursorPosCallback(window, mouseCallback);
 
 
+    auto scene = OK::Scene::create_scene();
 
+    auto game_object =  scene->add_game_object("helloworld");
+    auto transform = game_object->add_component<OK::Transform>();
+
+    scene->propagate_scene_graph();
 
     OK::ShaderProgram uiShader = shaderSystem.push("UI", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "text"} });
     OK::ShaderProgram simpleGeometryShader = shaderSystem.push("simpleGeometry", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "simple"} });
     OK::ShaderProgram texturedShader = shaderSystem.push("walls", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "textured"} });
     
-    auto shaders = { uiShader, simpleGeometryShader, texturedShader };
-
     OK::BlockLayout lightBufferLayout;
     lightBufferLayout.pushBlockArray(
         OK::BlockLayout("light", {

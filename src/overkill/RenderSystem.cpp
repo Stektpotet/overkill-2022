@@ -3,9 +3,9 @@
 namespace OK
 {
 
-void OK::RenderGroup::add(Rendered item)
-{
-    rendered_items.push_back(item);
-}
+//void OK::RenderGroup::add(Rendered item)
+//{
+//    rendered_items.push_back(item);
+//}
 
 }
