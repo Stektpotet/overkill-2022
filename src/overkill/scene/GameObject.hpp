@@ -2,11 +2,14 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <type_traits>
 
 #include "Components/BaseComponents.hpp"
 
 namespace OK
 {
+    struct Component;
+
     struct GameObject
     {
         friend class Scene;
@@ -26,17 +29,18 @@ namespace OK
 
         const Scene* const get_scene() const;
 
-        template<typename T, std::enable_if_t<std::is_base_of_v<Component, T>>* = nullptr>
-        T* add_component()
-        {
-            components.push_back(new T());
-            T* component = (T*)components.back();
-            component->game_object = this;
-            component->on_created(this);
-            return component;
-        }
+        template<typename TComponent, typename... Args> //, std::enable_if_t<std::is_base_of_v<Component, T>>* = nullptr>
+        TComponent* add_component(Args&&... args);
 
         ~GameObject();
     };
 
+    template<typename TComponent, typename ...Args>
+    inline TComponent* GameObject::add_component(Args && ...args)
+    {
+        TComponent* component = (TComponent*)components.emplace_back(new TComponent(std::forward<Args>(args)...));
+        component->game_object = this;
+        component->on_created(this);
+        return component;
+    }
 }

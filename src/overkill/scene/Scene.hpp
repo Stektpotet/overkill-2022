@@ -12,27 +12,25 @@
 
 #include "GameObject.hpp"
 #include "Components/Transform.hpp"
+#include "../RenderSystem.hpp"
 
 namespace OK
 {
     struct Transform;
 
-    class Scene : public GameObject
+    class Scene
     {
         //friend class GameObject;
+        std::string name;
         Transform* scene_graph;
         std::vector<GameObject*> objects;
 
-    
     public:
+        //RenderSystem renderSystem;
+
+
         Scene(const char* name);
 
-        // No public constructor, only a factory function,
-        // so there's no way to have getptr return nullptr.
-        //[[nodiscard]] static std::shared_ptr<Scene> create_scene() {
-        //    // Not using std::make_shared<Scene> because the c'tor is private.
-        //    return std::shared_ptr<Scene>(new Scene());
-        //}
 
         Transform* const & root() const;
         GameObject *& add_game_object(const char* name);

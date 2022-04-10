@@ -1,4 +1,5 @@
 #include "io.hpp"
+#include <overkill/scene/Components/Transform.hpp>
 
 namespace OK::IO
 {
@@ -18,7 +19,7 @@ namespace OK::IO
         return true;
     }
 
-    bool read_obj_into_scene(const std::string_view file_path, OK::Transform& parent)
+    bool read_obj_into_scene(const std::string_view file_path, Transform& parent)
     {
         tinyobj::ObjReaderConfig reader_config;
         reader_config.mtl_search_path = "./"; // Path to material files
@@ -82,7 +83,7 @@ namespace OK::IO
         return false;
     }
 
-    bool read_gltf_into_scene(const std::string_view file_path, OK::Transform& parent)
+    bool read_gltf_into_scene(const std::string_view file_path, Transform& parent)
     {
         return false;
     }

@@ -112,7 +112,8 @@ file (GLOB_RECURSE PROJECT_HEADERS src/*.hpp
 file (GLOB_RECURSE PROJECT_SOURCES src/*.cpp
                                    src/*.cxx
                                    src/*.cc
-                                   src/*.c)
+                                   src/*.c
+                                   src/*.tpp)
 file (GLOB_RECURSE PROJECT_SHADERS res/shaders/*.comp
                                    res/shaders/*.frag
                                    res/shaders/*.geom

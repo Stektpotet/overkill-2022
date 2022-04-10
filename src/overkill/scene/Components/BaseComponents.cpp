@@ -1,13 +1,18 @@
 #include "BaseComponents.hpp"
 #include "../GameObject.hpp"
+#include "../Scene.hpp"
 namespace OK
 {
     //Component(GameObject* owner);
 
     void Component::on_created(GameObject* go)
     {
-        game_object = go;
-        std::cout << go->get_name() << std::endl;
+    }
+
+    void GraphicsComponent::on_created(GameObject* go)
+    {
+        std::cout << go->get_name()<< "::GraphicsComponent" << std::endl;
+        //go->get_scene()->renderSystem.renderQueue
     }
 
     //void Component::on_created(GameObject* go) { game_object = go; }

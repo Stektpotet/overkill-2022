@@ -20,7 +20,7 @@ namespace OK
     struct GraphicsComponent : public Component
     {
         virtual void render() = 0;
-        //GraphicsComponent(GameObject* owner);
+        virtual void on_created(GameObject* go) override;
     };
 
 }

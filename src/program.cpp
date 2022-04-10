@@ -10,7 +10,6 @@
 #include <SFML/System/Time.hpp>
 #include <utilities/shapes.h>
 #include <utilities/glutils.h>
-#include <utilities/shader.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <utilities/timeutils.h>
 

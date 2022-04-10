@@ -17,7 +17,6 @@
 #include <utilities/mesh.h>
 #include <utilities/shapes.h>
 #include <utilities/glutils.h>
-#include <utilities/shader.hpp>
 #include <SFML/Audio/Sound.hpp>
 #include <fmt/format.h>
 #include "gamelogic.h"
@@ -161,7 +160,6 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     );
 
     lightBuffer = shaderSystem.makeUniformBuffer<GL_DYNAMIC_DRAW>("OK_Lights", lightBufferLayout);
-
     shaderSystem.bindUniformBlocks();
 
     OK::RawTexture charmap_raw = loadPNGFile("../res/textures/charmap.png");

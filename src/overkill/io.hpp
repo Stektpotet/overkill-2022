@@ -10,7 +10,10 @@
 #include <tiny_obj_loader.h>
 #include <tiny_gltf.h>
 
-#include <overkill/scene/Components/Transform.hpp>
+namespace OK {
+    struct Transform;
+}
+
 
 namespace OK::IO
 {
@@ -25,6 +28,6 @@ namespace OK::IO
 /// <returns> true when successful, false when unsuccessful </returns>
     bool read_file_to_string(const std::string_view file_path, std::string* out_string);
 
-    bool read_obj_into_scene(const std::string_view file_path, OK::Transform& parent);
-    bool read_gltf_into_scene(const std::string_view file_path, OK::Transform& parent);
+    bool read_obj_into_scene(const std::string_view file_path, Transform& parent);
+    bool read_gltf_into_scene(const std::string_view file_path, Transform& parent);
 }

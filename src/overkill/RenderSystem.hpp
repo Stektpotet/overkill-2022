@@ -23,24 +23,24 @@ struct Rendered
 class RenderGroup 
 {
     VertexArray vao;
-    ShaderProgram program;
+    //ShaderProgram program;
 
-    std::vector<std::shared_ptr<Rendered>> rendered_items;
+    std::vector<Rendered*> rendered_items;
 
 public:
     //void add(Rendered item);
 
-    void bind() const
+    /*void bind() const
     {
         vao.bind();
         program.bind();
-    }
+    }*/
 };
 
 class RenderSystem
 {
 public:
-    std::vector<std::unique_ptr<RenderGroup>> renderQueue;
+    std::vector<RenderGroup> renderQueue;
 };
 
 }
