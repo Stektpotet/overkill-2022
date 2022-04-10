@@ -18,6 +18,10 @@ namespace OK
 
     public:
 
+        inline const std::string_view get_name() const {
+            return name;
+        }
+
         GameObject(const char* name, Scene* scene);
 
         const Scene* const get_scene() const;
@@ -28,9 +32,11 @@ namespace OK
             components.push_back(new T());
             T* component = (T*)components.back();
             component->game_object = this;
-            //component->on_created(this);
+            component->on_created(this);
             return component;
         }
+
+        ~GameObject();
     };
 
 }

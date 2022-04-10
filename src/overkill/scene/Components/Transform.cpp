@@ -12,6 +12,11 @@ namespace OK
         set_parent(game_object->get_scene()->root());
     }
 
+    void Transform::on_created(GameObject* go)
+    {
+        orphan();
+    }
+
     void Transform::set_parent(Transform* transform)
     {
         if (parent != nullptr) {

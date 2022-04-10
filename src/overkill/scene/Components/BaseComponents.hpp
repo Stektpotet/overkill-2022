@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 
 namespace OK
 {
@@ -12,8 +13,8 @@ namespace OK
         GameObject* game_object;
         virtual void update(float delta_time) {};
 
-        //Component(GameObject* owner);
-        //virtual void on_created(GameObject* go);
+        virtual void on_created(GameObject* go);
+
     };
 
     struct GraphicsComponent : public Component

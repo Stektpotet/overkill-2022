@@ -6,7 +6,10 @@ namespace OK
         : GameObject(name, this),
         objects{}
     {
-        scene_graph = add_component<Transform>();
+        // We cannot use add_component here, as it will attempt to put the parent of the transform to this unconstructed scene's transform.
+        scene_graph = new Transform();
+        scene_graph->game_object = this;
+        components.push_back(scene_graph);
     }
     Transform* const & Scene::root() const
     {
@@ -37,5 +40,24 @@ namespace OK
         {
             propagate_trs(child, transform->trs);
         }
+    }
+
+    Scene::~Scene()
+    {
+        for (auto game_object : objects) {
+            delete game_object;
+        }
+        objects.clear();
+        scene_graph = nullptr; // pointee deleted by superclass Destructor through deletion of components
+
+        /*
+        * IN ~GameObject
+
+        for (auto comp : components) { // deletes scene_graph
+            delete comp;
+        }
+        components.clear();
+
+        */
     }
 }

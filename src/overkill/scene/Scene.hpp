@@ -41,6 +41,8 @@ namespace OK
     private:
         Scene();
         void propagate_trs(Transform* transform, glm::mat4 parent_trs);
+
+        ~Scene();
     };
 
 }

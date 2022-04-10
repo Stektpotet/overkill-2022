@@ -25,7 +25,7 @@ namespace OK
 
         //Transform(GameObject* owner);
 
-        //void on_created(GameObject* go) override;
+        virtual void on_created(GameObject* go) override;
         void set_parent(Transform* transform);
         void orphan();
 
