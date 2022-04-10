@@ -2,13 +2,29 @@
 
 namespace OK
 {
-    void Transform::on_created(GameObject& go)
+    //void Transform::on_created(GameObject* go)
+    //{
+    //    game_object = go;
+    //    orphan();
+    //}
+    void Transform::orphan()
     {
-        set_parent(go.get_scene()->root().get());
+        set_parent(game_object->get_scene()->root());
     }
+
     void Transform::set_parent(Transform* transform)
     {
-        parent.reset(transform);
-        parent->children.push_back(shared_from_this());
+        if (parent != nullptr) {
+            for (auto iter = parent->children.begin(); iter != parent->children.end(); ++iter)
+            {
+                if (*iter == this)
+                {
+                    parent->children.erase(iter);
+                    break;
+                }
+            }
+        }
+        parent = transform;
+        parent->children.push_back(this);
     }
 }

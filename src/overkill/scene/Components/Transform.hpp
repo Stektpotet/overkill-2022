@@ -10,7 +10,7 @@
 namespace OK
 {
 
-    struct Transform : public Component, std::enable_shared_from_this<Transform>
+    struct Transform : public Component
     {
         //[[nodiscard]] static std::shared_ptr<Transform> create_shared() {
         //    return std::shared_ptr<Transform>(new Transform());
@@ -23,15 +23,19 @@ namespace OK
         glm::vec3 rotation = { 0, 0, 0 };
         glm::vec3 scale = { 1, 1, 1 };
 
-        virtual void on_created(GameObject& go);
+        //Transform(GameObject* owner);
+
+        //void on_created(GameObject* go) override;
         void set_parent(Transform* transform);
+        void orphan();
 
     private:
         friend class Scene;
-        //Transform() = default; 
+
+
         glm::mat4 trs = glm::mat4(1.0f);
-        std::unique_ptr<Transform> parent = nullptr;
-        std::vector<std::shared_ptr<Transform>> children;
+        Transform* parent = nullptr;
+        std::vector<Transform*> children;
     };
 
 }

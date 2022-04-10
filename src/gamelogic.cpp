@@ -136,8 +136,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     glfwSetCursorPosCallback(window, mouseCallback);
 
-
-    auto scene = OK::Scene::create_scene();
+    auto scene = new OK::Scene("Test Scene");
 
     auto game_object =  scene->add_game_object("helloworld");
     auto transform = game_object->add_component<OK::Transform>();
