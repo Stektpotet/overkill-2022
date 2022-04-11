@@ -9,6 +9,10 @@ namespace OK
     {
     }
 
+    void Component::on_start_game()
+    {
+    }
+
     void GraphicsComponent::on_created(GameObject* go)
     {
         std::cout << go->get_name()<< "::GraphicsComponent" << std::endl;

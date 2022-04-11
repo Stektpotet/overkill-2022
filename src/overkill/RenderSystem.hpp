@@ -15,7 +15,7 @@ namespace OK
     
 struct Rendered
 {
-    VertexBuffer vbo;
+    VertexBuffer* vbos;
     IndexBuffer<std::uint16_t> ibo;
 };
 
@@ -23,7 +23,7 @@ struct Rendered
 class RenderGroup 
 {
     VertexArray vao;
-    //ShaderProgram program;
+    ShaderProgram program;
 
     std::vector<Rendered*> rendered_items;
 

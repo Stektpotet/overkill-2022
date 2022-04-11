@@ -14,7 +14,7 @@ namespace OK
         virtual void update(float delta_time) {};
 
         virtual void on_created(GameObject* go);
-
+        virtual void on_start_game();
     };
 
     struct GraphicsComponent : public Component

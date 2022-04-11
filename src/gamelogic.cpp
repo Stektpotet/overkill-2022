@@ -45,6 +45,7 @@ enum KeyFrameAction {
 #define TINYOBJLOADER_IMPLEMENTATION 
 #endif
 #include <tiny_obj_loader.h>
+#include <overkill/scene/MeshUtility.hpp>
 
 double padPositionX = 0;
 double padPositionZ = 0;
@@ -175,6 +176,9 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     brickwall[0].bind(1);
     brickwall[1].bind(2);
     brickwall[2].bind(3);
+
+    OK::Mesh mesh = OK::make_cube();
+
 
     // Create meshes
     Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
