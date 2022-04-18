@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <vector>
 #include <memory>
 
@@ -22,7 +23,7 @@ namespace OK
         //}
 
         glm::vec3 position = { 0, 0, 0 };
-        glm::vec3 rotation = { 0, 0, 0 };
+        glm::quat rotation = glm::quat(glm::vec3{ 0,0,0 });
         glm::vec3 scale = { 1, 1, 1 };
 
         //Transform(GameObject* owner);
@@ -32,6 +33,7 @@ namespace OK
         void set_parent(Transform* transform);
         void orphan();
 
+        
         const glm::mat4 get_trs() const;
         const glm::mat4 local_trs() const;
 

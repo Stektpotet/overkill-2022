@@ -1,10 +1,12 @@
 #include "Scene.hpp"
 #include <overkill/scene/Components/SimpleMeshRendered.hpp>
-
 #include <overkill/ShaderSystem.hpp>
 #include <overkill/TextureSystem.hpp>
 #include <overkill/graphics_internal/FrameBuffer.hpp>
 
+#include <glm/gtc/quaternion.hpp>
+
+#include <iostream>
 
 namespace OK
 {
@@ -16,12 +18,17 @@ namespace OK
     {
         scene_graph = new Transform();
 
-        const std::type_index renderTypeName = std::type_index(typeid(GraphicsComponent));
-        components[renderTypeName] = new ComponentRegistry<GraphicsComponent>();
-        renderers = (ComponentRegistry<GraphicsComponent>*)components[renderTypeName];
+        const std::type_index renderer_TypeName = std::type_index(typeid(GraphicsComponent));
+        components[renderer_TypeName] = new ComponentRegistry<GraphicsComponent>();
+        renderers = (ComponentRegistry<GraphicsComponent>*)components[renderer_TypeName];
+
+        const std::type_index lightsource_TypeName = std::type_index(typeid(LightSource));
+        components[lightsource_TypeName] = new ComponentRegistry<LightSource>();
+        light_sources = (ComponentRegistry<LightSource>*)components[lightsource_TypeName];
 
         // TODO: this is quite ugly -> Ideally order of construction should not matter!
-        shared_matrices = ShaderSystem::get_uniform_buffer("OK_Matrices");
+        shared_matrices_buffer = ShaderSystem::get_uniform_buffer("OK_Commons");
+        light_buffer = ShaderSystem::get_uniform_buffer("OK_Lights");
 
         camera = add_game_object("main_camera")->add_component<Camera>();
     }
@@ -67,6 +74,29 @@ namespace OK
             main_framebuffer->bind(); 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         }
+
+        // TODO: Update range of lights in one update call by batching together the data beforehand
+        //void* raw_light_data = malloc(light_buffer->size());
+        //std::fill_n(raw_light_data, light_buffer->size(), 0);
+        for (const auto& light_component : light_sources->registered_components) 
+        {
+            auto packed = OK::pack_data(
+                glm::vec4{ light_component->light.intensities, 1 },
+                glm::vec4{ glm::eulerAngles(light_component->transform()->rotation), 1 }
+            );
+            switch (light_component->light_type)
+            {
+            case LightSource::Type::DIRECTIONAL:;
+                
+                light_buffer->update(sizeof(packed), &packed);
+                break;
+            default:
+                std::cout << "Light source type not implemented!" << std::endl;
+                break;
+            }
+        }
+        //free(raw_light_data);
+
         for (const auto& r : renderers->registered_components) {
             r->render();
         }
@@ -103,7 +133,7 @@ namespace OK
             camera->view_matrix
         );
 
-        shared_matrices->update(sizeof(packed_matrices), &packed_matrices);
+        shared_matrices_buffer->update(sizeof(packed_matrices), &packed_matrices);
     }
     
     void Scene::propagate_trs(Transform* transform, glm::mat4 parent_trs)

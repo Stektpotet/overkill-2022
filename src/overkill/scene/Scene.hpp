@@ -15,6 +15,7 @@
 
 #include "GameObject.hpp"
 #include "Components/BaseComponents.hpp"
+#include "Components/LightSource.hpp"
 #include "Components/Transform.hpp"
 #include "Components/Camera.hpp"
 #include "../RenderSystem.hpp"
@@ -41,15 +42,20 @@ namespace OK
         friend class GameObject;
         std::string name;
         
+        Viewport viewport;
+
+        std::vector<GameObject*> objects;
+        std::unordered_map<std::type_index, ComponentRegistryBase*> components;
+
+        ComponentRegistry<GraphicsComponent>* renderers;
+        ComponentRegistry<LightSource>* light_sources;
+
+        UniformBuffer* shared_matrices_buffer;
+        UniformBuffer* light_buffer;
+
         Transform* scene_graph;
         Camera* camera;
 
-        UniformBuffer* shared_matrices;
-        std::vector<GameObject*> objects;
-        std::unordered_map<std::type_index, ComponentRegistryBase*> components;
-        ComponentRegistry<GraphicsComponent>* renderers;
-        
-        Viewport viewport;
     public:
         OK::FrameBuffer* main_framebuffer = nullptr;
         //RenderSystem renderSystem;

@@ -303,10 +303,7 @@ namespace OK
 
 
         inline void bind(GLuint slot = 0) const override {
-            //glBindTextureUnit(slot, id);
-
-            glActiveTexture(GL_TEXTURE0 + slot);
-            glBindTexture(GL_TEXTURE_2D, id);
+            glBindTextureUnit(slot, id);
         }
         inline void unbind() const override {
             glBindTexture(TextureType, 0);

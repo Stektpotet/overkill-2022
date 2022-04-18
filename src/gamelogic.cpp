@@ -49,7 +49,6 @@ enum KeyFrameAction {
 #include <tiny_obj_loader.h>
 #include <overkill/scene/MeshUtility.hpp>
 #include <overkill/TextureSystem.hpp>
-#include <overkill/scene/Components/Terrain.hpp>
 
 double padPositionX = 0;
 double padPositionZ = 0;
@@ -169,7 +168,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
 
     lightBuffer = OK::ShaderSystem::makeUniformBuffer<GL_DYNAMIC_DRAW>(lightBufferLayout);
-    matrixBuffer = OK::ShaderSystem::makeUniformBuffer<GL_DYNAMIC_DRAW>("OK_Matrices", { { "projection", 64 }, { "view", 64 } });
+    matrixBuffer = OK::ShaderSystem::makeUniformBuffer<GL_DYNAMIC_DRAW>("OK_Commons", { { "projection", 64 }, { "view", 64 } });
     OK::ShaderSystem::bindUniformBlocks();
 
 
@@ -193,7 +192,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     auto renderer = game_object2->add_component<OK::SimpleMeshRenderer>();
 
     scene->active_camera()->transform()->position = {0, 1, 5};
-    scene->active_camera()->transform()->rotation = { glm::radians(-20.0f), 0, 0 };
+    scene->active_camera()->transform()->rotation = glm::quat(glm::vec3{ glm::radians(-20.0f), 0, 0 });
 
     auto terrain_renderer = scene->add_game_object("ground")->add_component<OK::SimpleMeshRenderer>();
     
@@ -217,20 +216,6 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     scene->propagate_scene_graph();
 
-
-    //OK::RawTexture charmap_raw = loadPNGFile("../res/textures/charmap.png");
-    //OK::RawTexture brickwall_albedo_raw = loadPNGFile("../res/textures/Brick03_col.png");
-    //OK::RawTexture brickwall_nrm_raw = loadPNGFile("../res/textures/Brick03_nrm.png");
-    //OK::RawTexture brickwall_spec_raw = loadPNGFile("../res/textures/Brick03_rgh.png");
-
-    //charmapAtlasTexture = OK::Texture2D(charmap_raw, { GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT });
-    //brickwall[0] = OK::Texture2D(brickwall_albedo_raw);
-    //brickwall[1] = OK::Texture2D(brickwall_nrm_raw, { GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT } );
-    //brickwall[2] = OK::Texture2D(brickwall_spec_raw);
-    //charmapAtlasTexture.bind(0); 
-    //brickwall[0].bind(1);
-    //brickwall[1].bind(2);
-    //brickwall[2].bind(3);
     OK::TextureSystem::get2D("charmap").bind(0);
     OK::TextureSystem::get2D("Brick03_col").bind(1);
     OK::TextureSystem::get2D("Brick03_nrm").bind(2);
@@ -242,70 +227,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
         std::cout << tr->game_object->get_name() << "::Transform" << std::endl;
     }
 
-    // Create meshes
-    //Mesh pad = cube(padDimensions, glm::vec2(30, 40), true);
-    //Mesh box = cube(boxDimensions, glm::vec2(90), true, true);
-    //Mesh sphere = generateSphere(1.0, 40, 40);
-    //std::string text = "The cake is a lie!";
-    //Mesh textMesh = generateTextGeometryBuffer(text, 32.f / 29.f, 29.f * text.length());
-    //
-    //// Fill buffers
-    //unsigned int ballVAO = generateBuffer(sphere);
-    //unsigned int boxVAO = generateBuffer(box);
-    //unsigned int padVAO = generateBuffer(pad);
-    //unsigned int textVAO = generateBuffer(textMesh);
-
-    //// Construct scene
-    //rootNode = createSceneNode();
-    //boxNode = createSceneNode(SceneNodeType::NORMAL_MAPPED);
-    //padNode = createSceneNode(SceneNodeType::GEOMETRY);
-    //ballNode = createSceneNode(SceneNodeType::GEOMETRY);
-    //textNode = createSceneNode(SceneNodeType::UI);
-    //// center the text in the bottom of the view
-    //textNode->position = { WINDOW_WIDTH * 0.5f - 14.5f * text.length(), 16.f, 0 }; 
-
-    //rootNode->children.push_back(boxNode);
-    //rootNode->children.push_back(padNode);
-    //rootNode->children.push_back(ballNode);
-    //rootNode->children.push_back(textNode);
-
-    //boxNode->vertexArrayObjectID = boxVAO;
-    //boxNode->VAOIndexCount = box.indices.size();
-
-    //padNode->vertexArrayObjectID = padVAO;
-    //padNode->VAOIndexCount = pad.indices.size();
-
-    //ballNode->vertexArrayObjectID = ballVAO;
-    //ballNode->VAOIndexCount = sphere.indices.size();
-
-    //textNode->vertexArrayObjectID = textVAO;
-    //textNode->VAOIndexCount = textMesh.indices.size();
-
-    //glm::vec3 intensities[NUM_LIGHTS];
-    //std::fill(std::begin(intensities), std::end(intensities), glm::vec3{1, .8, .5}); // Set the lights to be of a yellow/orange tint
-
-    //SceneNode* lightSources[NUM_LIGHTS];
-    //for (size_t i = 0; i < NUM_LIGHTS; i++)
-    //{
-    //    lights[i].setRadius(100);
-    //    lights[i].intensities = intensities[i];
-    //    lightSources[i] = createSceneNode(SceneNodeType::POINT_LIGHT);
-    //    lightSources[i]->lightID = i;
-    //    lightSources[i]->position = glm::vec3(i * 20 - (20 * (NUM_LIGHTS - 2)) * 0.5f, 2, 20);
-    //}
-    //for (size_t i = 2; i < NUM_LIGHTS; i++)
-    //{
-    //    padNode->children.push_back(lightSources[i]);
-    //}
-    //// Place light sourcces in the upper back corners of the box
-    //lightSources[0]->position = { -85, 40, -40 };
-    //lightSources[1]->position = {  85, 40, -40 };
-    //boxNode->children.push_back(lightSources[0]);
-    //boxNode->children.push_back(lightSources[1]);
-
     getTimeDeltaSeconds();
-
-    //std::cout << fmt::format("Initialized scene with {} SceneNodes.", totalChildren(rootNode)) << std::endl;
 
     std::cout << "Ready. Click to start!" << std::endl;
 }
@@ -315,16 +237,8 @@ void updateFrame(GLFWwindow* window) {
 
     double timeDelta = getTimeDeltaSeconds();
 
-    //const float ballBottomY = boxNode->position.y - (boxDimensions.y/2) + ballRadius + padDimensions.y;
-    //const float ballTopY    = boxNode->position.y + (boxDimensions.y/2) - ballRadius;
-    //const float BallVerticalTravelDistance = ballTopY - ballBottomY;
 
     const float cameraWallOffset = 30; // Arbitrary addition to prevent ball from going too much into camera
-
-    //const float ballMinX = boxNode->position.x - (boxDimensions.x/2) + ballRadius;
-    //const float ballMaxX = boxNode->position.x + (boxDimensions.x/2) - ballRadius;
-    //const float ballMinZ = boxNode->position.z - (boxDimensions.z/2) + ballRadius;
-    //const float ballMaxZ = boxNode->position.z + (boxDimensions.z/2) - ballRadius - cameraWallOffset;
 
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
@@ -356,9 +270,6 @@ void updateFrame(GLFWwindow* window) {
             hasStarted = true;
         }
 
-        //ballPosition.x = ballMinX + (1 - padPositionX) * (ballMaxX - ballMinX);
-        //ballPosition.y = ballBottomY;
-        //ballPosition.z = ballMinZ + (1 - padPositionZ) * ((ballMaxZ + cameraWallOffset) - ballMinZ);
     } else {
         totalElapsedTime += timeDelta;
         if(hasLost) {
@@ -405,242 +316,11 @@ void updateFrame(GLFWwindow* window) {
 
             KeyFrameAction currentOrigin = keyFrameDirections.at(currentKeyFrame);
             KeyFrameAction currentDestination = keyFrameDirections.at(currentKeyFrame + 1);
-
-            // Synchronize ball with music
-            //if (currentOrigin == BOTTOM && currentDestination == BOTTOM) {
-            //    ballYCoord = ballBottomY;
-            //} else if (currentOrigin == TOP && currentDestination == TOP) {
-            //    ballYCoord = ballBottomY + BallVerticalTravelDistance;
-            //} else if (currentDestination == BOTTOM) {
-            //    ballYCoord = ballBottomY + BallVerticalTravelDistance * (1 - fractionFrameComplete);
-            //} else if (currentDestination == TOP) {
-            //    ballYCoord = ballBottomY + BallVerticalTravelDistance * fractionFrameComplete;
-            //}
-
-            //// Make ball move
-            //const float ballSpeed = 60.0f;
-            //ballPosition.x += timeDelta * ballSpeed * ballDirection.x;
-            //ballPosition.y = ballYCoord;
-            //ballPosition.z += timeDelta * ballSpeed * ballDirection.z;
-
-            //// Make ball bounce
-            //if (ballPosition.x < ballMinX) {
-            //    ballPosition.x = ballMinX;
-            //    ballDirection.x *= -1;
-            //} else if (ballPosition.x > ballMaxX) {
-            //    ballPosition.x = ballMaxX;
-            //    ballDirection.x *= -1;
-            //}
-            //if (ballPosition.z < ballMinZ) {
-            //    ballPosition.z = ballMinZ;
-            //    ballDirection.z *= -1;
-            //} else if (ballPosition.z > ballMaxZ) {
-            //    ballPosition.z = ballMaxZ;
-            //    ballDirection.z *= -1;
-            //}
-
-            //if(options.enableAutoplay) {
-            //    padPositionX = 1-(ballPosition.x - ballMinX) / (ballMaxX - ballMinX);
-            //    padPositionZ = 1-(ballPosition.z - ballMinZ) / ((ballMaxZ+cameraWallOffset) - ballMinZ);
-            //}
-
-            // Check if the ball is hitting the pad when the ball is at the bottom.
-            // If not, you just lost the game! (hehe)
-            //if (jumpedToNextFrame && currentOrigin == BOTTOM && currentDestination == TOP) {
-            //    double padLeftX  = boxNode->position.x - (boxDimensions.x/2) + (1 - padPositionX) * (boxDimensions.x - padDimensions.x);
-            //    double padRightX = padLeftX + padDimensions.x;
-            //    double padFrontZ = boxNode->position.z - (boxDimensions.z/2) + (1 - padPositionZ) * (boxDimensions.z - padDimensions.z);
-            //    double padBackZ  = padFrontZ + padDimensions.z;
-
-            //    if (   ballPosition.x < padLeftX
-            //        || ballPosition.x > padRightX
-            //        || ballPosition.z < padFrontZ
-            //        || ballPosition.z > padBackZ
-            //    ) {
-            //        hasLost = true;
-            //        if (options.enableMusic) {
-            //            sound->stop();
-            //            delete sound;
-            //        }
-            //    }
-            //}
         }
-    }
-
-    //boxNode->position = { 0, -10, -80 };
-
-    //ballNode->position = ballPosition;
-    //ballNode->scale = glm::vec3(ballRadius);
-    //ballNode->rotation = { 0, totalElapsedTime*2, 0 };
-
-    //padNode->position  = {
-    //    boxNode->position.x - (boxDimensions.x/2) + (padDimensions.x/2) + (1 - padPositionX) * (boxDimensions.x - padDimensions.x),
-    //    boxNode->position.y - (boxDimensions.y/2) + (padDimensions.y/2),
-    //    boxNode->position.z - (boxDimensions.z/2) + (padDimensions.z/2) + (1 - padPositionZ) * (boxDimensions.z - padDimensions.z)
-    //};
-
-
-    ////  "Animation" of light nodes
-    //for (size_t i = 0; i < padNode->children.size(); i++)
-    //{
-    //    float offset = glm::two_pi<float>() * ((float)i / (NUM_LIGHTS - 1));
-    //    padNode->children[i]->position.y = 2 + glm::cos(offset + totalElapsedTime) * 2;
-    //    padNode->children[i]->position.x = 2 + glm::sin(offset + totalElapsedTime) * 2;
-    //}
-    ////lights[NUM_LIGHTS - 1].intensities = { 0.5f + glm::cos(totalElapsedTime * 4) * 0.5, 0,0.5f + glm::sin(totalElapsedTime * 4) * 0.5 };
-
-
-    //// Update geometry information for shadow casting
-    //glm::vec4 ballInfo = { 
-    //    glm::vec3(ballNode->currentTransformationMatrix[3]), ballRadius
-    //};
-    //glm::mat2x3 boxInfo{
-    //    glm::vec3(boxNode->currentTransformationMatrix[3]), boxDimensions * 0.5f
-    //};
-
-    //auto simpleGeometryShader = shaderSystem.get("simpleGeometry");
-    //simpleGeometryShader->bind();
-    //glUniform4fv(simpleGeometryShader->getUniformLocation("ball_info"), 1, glm::value_ptr(ballInfo));
-    //glUniformMatrix2x3fv(simpleGeometryShader->getUniformLocation("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
-
-    //auto texturedShader = shaderSystem.get("walls");
-    //texturedShader->bind();
-    //glUniform4fv(texturedShader->getUniformLocation("ball_info"), 1, glm::value_ptr(ballInfo));
-    //glUniformMatrix2x3fv(texturedShader->getUniformLocation("box_info"), 1, GL_FALSE, glm::value_ptr(boxInfo));
-
-    
-    //updateNodeTransformations(rootNode);
-}
-
-void updateNodeTransformations(SceneNode* node) {
-    updateNodeTransformations(node, glm::identity<glm::mat4>());
-}
-void updateNodeTransformations(SceneNode* node, glm::mat4 transformationThusFar) {
-    glm::mat4 localTransformation;
-    switch(node->nodeType) {
-        case SceneNodeType::POINT_LIGHT: 
-        {
-            localTransformation = glm::translate(node->position);
-            if (node->lightID != -1) {
-                PointLight lightData = lights[node->lightID];
-
-                auto packed = OK::pack_data(
-                    glm::vec4{ glm::vec3{node->currentTransformationMatrix[3]}, 0 },
-                    glm::vec4{ lightData.intensities, 1 },
-                    lightData.constant,
-                    lightData.linear,
-                    lightData.quadratic,
-                    0.0f
-                );
-
-                lightBuffer->update(sizeof(packed) * node->lightID, sizeof(packed), &packed);
-            }
-        }
-        break;
-        case SceneNodeType::SPOT_LIGHT: 
-        {
-            localTransformation =
-                glm::translate(node->position)
-                * glm::translate(node->referencePoint)
-                * glm::rotate(node->rotation.y, glm::vec3(0, 1, 0))
-                * glm::rotate(node->rotation.x, glm::vec3(1, 0, 0))
-                * glm::rotate(node->rotation.z, glm::vec3(0, 0, 1))
-                * glm::translate(-node->referencePoint);
-        }
-        break;
-        default:
-        {
-            localTransformation =
-                glm::translate(node->position)
-                * glm::translate(node->referencePoint)
-                * glm::rotate(node->rotation.y, glm::vec3(0, 1, 0))
-                * glm::rotate(node->rotation.x, glm::vec3(1, 0, 0))
-                * glm::rotate(node->rotation.z, glm::vec3(0, 0, 1))
-                * glm::scale(node->scale)
-                * glm::translate(-node->referencePoint);
-        }
-        break;
-    }
-
-    node->currentTransformationMatrix = transformationThusFar * localTransformation;
-
-    for(SceneNode* child : node->children) {
-        updateNodeTransformations(child, node->currentTransformationMatrix);
-    }
-}
-
-void renderNode(SceneNode* node) {
-
-    glm::mat4 projection = glm::perspective(glm::radians(80.0f), float(WINDOW_WIDTH) / float(WINDOW_HEIGHT), 0.1f, 350.f);
-
-    glm::vec3 cameraPosition = glm::vec3(0, 2, -20);
-
-    // Some math to make the camera move in a nice way
-    float lookRotation = -0.6 / (1 + exp(-5 * (padPositionX - 0.5))) + 0.3;
-    glm::mat4 cameraTransform =
-        glm::rotate(0.3f + 0.2f * float(-padPositionZ * padPositionZ), glm::vec3(1, 0, 0)) *
-        glm::rotate(lookRotation, glm::vec3(0, 1, 0)) *
-        glm::translate(-cameraPosition);
-
-    glm::mat4 VP = projection * cameraTransform;
-    glm::mat4 MVP = VP * node->currentTransformationMatrix;
-    glm::mat3 NRM = glm::transpose(glm::inverse(glm::mat3(node->currentTransformationMatrix)));
-    switch(node->nodeType) {
-        case SceneNodeType::GEOMETRY:
-            if(node->vertexArrayObjectID != -1) {
-                auto simpleGeometryShader = OK::ShaderSystem::get("simpleGeometry");
-                simpleGeometryShader->bind();
-                glUniformMatrix4fv(simpleGeometryShader->getUniformLocation("MVP"), 1, GL_FALSE, glm::value_ptr(MVP));
-                glUniformMatrix4fv(simpleGeometryShader->getUniformLocation("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-                glUniformMatrix3fv(simpleGeometryShader->getUniformLocation("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
-                glUniform3fv(simpleGeometryShader->getUniformLocation("eye"), 1, glm::value_ptr(-cameraPosition));
-
-                glBindVertexArray(node->vertexArrayObjectID);
-                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
-            }
-            break;
-        case SceneNodeType::UI:
-            if (node->vertexArrayObjectID != -1) {
-                auto uiShader = OK::ShaderSystem::get("UI");
-                uiShader->bind();
-                glm::mat4 ortho = glm::ortho<float>(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT, -1, 1);
-                // Strictly speaking not the MVP, but this will allow us to reuse simple.vert
-                glUniformMatrix4fv(uiShader->getUniformLocation("MVP"), 1, GL_FALSE, glm::value_ptr(ortho * node->currentTransformationMatrix));
-                glUniformMatrix4fv(uiShader->getUniformLocation("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-                glUniformMatrix3fv(uiShader->getUniformLocation("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
-
-                glBindVertexArray(node->vertexArrayObjectID);
-                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr); 
-            }
-            break;
-        case SceneNodeType::NORMAL_MAPPED:
-            if (node->vertexArrayObjectID != -1) {
-                auto texturedShader = OK::ShaderSystem::get("walls");
-                texturedShader->bind();
-                glUniformMatrix4fv(texturedShader->getUniformLocation("MVP"), 1, GL_FALSE, glm::value_ptr(MVP));
-                glUniformMatrix4fv(texturedShader->getUniformLocation("TRS"), 1, GL_FALSE, glm::value_ptr(node->currentTransformationMatrix));
-                glUniformMatrix3fv(texturedShader->getUniformLocation("NRM"), 1, GL_FALSE, glm::value_ptr(NRM));
-                glUniform3fv(texturedShader->getUniformLocation("eye"), 1, glm::value_ptr(-cameraPosition));
-
-                glBindVertexArray(node->vertexArrayObjectID);
-                glDrawElements(GL_TRIANGLES, node->VAOIndexCount, GL_UNSIGNED_INT, nullptr);
-            }
-            break;
-            break;
-        case SceneNodeType::POINT_LIGHT: 
-            break;
-        case SceneNodeType::SPOT_LIGHT: break;
-    }
-
-    for(SceneNode* child : node->children) {
-        renderNode(child);
     }
 }
 
 void renderFrame(GLFWwindow* window) {
-    int windowWidth, windowHeight;
-    glfwGetWindowSize(window, &windowWidth, &windowHeight);
-    glViewport(0, 0, windowWidth, windowHeight);
 
     double timeDelta = getTimeDeltaSeconds();
     //renderNode(rootNode);
@@ -652,8 +332,8 @@ void renderFrame(GLFWwindow* window) {
 
     // Utility for grabbing a screenshot for the various tasks
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
-        OK::RawTexture imgGrab = OK::RawTexture(windowWidth, windowHeight, 4u);
-        glReadPixels(0, 0, windowWidth, windowWidth, GL_RGBA, GL_UNSIGNED_BYTE, &imgGrab.pixels[0]);
+        OK::RawTexture imgGrab = OK::RawTexture(WINDOW_WIDTH, WINDOW_HEIGHT, 4u);
+        glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, &imgGrab.pixels[0]);
         GLenum err = glGetError();
         if (err != GL_NO_ERROR)
             std::cout << "Encountered error with glReadPixels: " << err << std::endl;

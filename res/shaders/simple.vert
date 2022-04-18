@@ -11,7 +11,7 @@ uniform layout(location = 1) mat4 TRS;
 uniform layout(location = 2) mat3 NRM;
 uniform layout(location = 3) vec3 eye;
 
-layout(std140) uniform OK_Matrices{
+layout(std140) uniform OK_Commons{
     mat4 projection;
     mat4 view;
 };

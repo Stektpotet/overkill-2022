@@ -10,5 +10,5 @@ out vec4 color;
 
 void main()
 {
-    color = vec4(uv,0,1); //vec4(texture(_color, uv).rgb, 1);
+    color = vec4(texture(_color, uv).rgb, 1);
 }

@@ -24,7 +24,7 @@ public:
 
 class ShaderProgram 
 {
-public:
+public: // TODO: make private again -> put as public for debugging purposes
     friend class ShaderSystem; // Give access to creation of shaders from the shadersystem
 
     GLuint id = 0;

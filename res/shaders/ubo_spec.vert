@@ -6,7 +6,7 @@ THIS SHADER IS ONLY MEANT AS A DECLARATION
 OF THE UNIVERSAL UBO STRUCTURES UTILISED.
 */
 
-layout(std140) uniform OK_Matrices{
+layout(std140) uniform OK_Commons{
     mat4 projection;
     mat4 view;  // eye can be accessed through this
     float time;
@@ -27,6 +27,7 @@ struct OK_Light_Point {
 };
 
 layout(std140) uniform OK_Lights{
+    OK_Light_Directional sun;
     OK_Light_Point light[MAX_LIGHTS];
 };
 

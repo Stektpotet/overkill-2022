@@ -2,7 +2,7 @@
 
 #include "Transform.hpp"
 #include <overkill/scene/GameObject.hpp>
-
+#include <overkill/scene/Scene.hpp>
 namespace OK
 {
     void SimpleMeshRenderer::on_created()
@@ -17,15 +17,18 @@ namespace OK
             return;
 
         model->vao.bind();
+        const auto& trs = game_object->get_transform()->get_trs();
+        const auto& cam = game_object->get_scene()->active_camera();
 
-        const auto& transform = game_object->get_transform();
-        const auto& trs = transform->get_trs();
         glm::mat3 nrm = glm::transpose(glm::inverse(glm::mat3(trs)));
+        glm::mat4 mvp = cam->projection_matrix * cam->view_matrix * trs;
 
         for (const auto& renderable : model->renderables)
         {
             renderable.ibo.bind();
             renderable.shader_program->bind();
+
+            glUniformMatrix4fv(renderable.shader_program->getUniformLocation("MVP"), 1, GL_FALSE, glm::value_ptr(mvp));
             glUniformMatrix4fv(renderable.shader_program->getUniformLocation("TRS"), 1, GL_FALSE, glm::value_ptr(trs));
             glUniformMatrix3fv(renderable.shader_program->getUniformLocation("NRM"), 1, GL_FALSE, glm::value_ptr(nrm));
             glDrawElements(GL_TRIANGLES, renderable.ibo.count, renderable.ibo.index_type, nullptr);

@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <initializer_list>
 #include <string>
+#include <iostream>
 
 namespace OK
 {
@@ -57,7 +58,7 @@ public:
         {
             return search->second;
         }
-        //LOG_WARN("indexOfUniform: \"%s\" cannot be found in buffer!\n has it been added in the layout?", name.c_str());
+        std::cout << "WARN: BlockLayout::indexOfUniform: << \"" << m_name.data() << "\" << cannot be found in buffer!\n has it been added in the layout?" << std::endl;
         return 0;
         //return m_vars.at(name);
     }
@@ -131,6 +132,10 @@ public:
     inline GLuint get()  const
     {
         return m_id;
+    }
+    inline GLsizei size()  const
+    {
+        return m_blockLayout.size();
     }
 
     inline explicit operator GLuint() const
