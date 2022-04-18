@@ -1,4 +1,7 @@
 #include "Transform.hpp"
+#include "../GameObject.hpp"
+#include "../Scene.hpp"
+#include <glm/gtx/transform.hpp>
 
 namespace OK
 {
@@ -12,7 +15,23 @@ namespace OK
         set_parent(game_object->get_scene()->root());
     }
 
-    void Transform::on_created(GameObject* go)
+    const glm::mat4 Transform::get_trs() const
+    {
+        return trs;
+    }
+
+    const glm::mat4 Transform::local_trs() const
+    {
+        return (
+            glm::translate(position) *
+            glm::rotate(rotation.y, glm::vec3(0, 1, 0)) *
+            glm::rotate(rotation.x, glm::vec3(1, 0, 0)) *
+            glm::rotate(rotation.z, glm::vec3(0, 0, 1)) *
+            glm::scale(scale)
+        );
+    }
+
+    void Transform::on_created()
     {
         orphan();
     }

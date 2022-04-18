@@ -1,4 +1,8 @@
 #include "Texture.hpp"
+#include <stdio.h>
+#include <iostream>
+
+
 namespace OK
 {
 TextureBase::TextureBase(
@@ -14,9 +18,11 @@ TextureBase::TextureBase(
 {}
 
 Texture2DArray::Texture2DArray(
-    RawTexture raw,
+    RawTexture8& raw,
     TextureSamplingOptions options
 ) :	Texture(raw, options), 
     depth{ depth }
 {}
+
+
 }

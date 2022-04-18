@@ -90,9 +90,10 @@ vec3 pointlight(in OK_Light_Point light) {
 
 void main()
 {
-    vec3 lights = ambient_intensity;
+    
+    vec3 lights = ambient_intensity * max(0, dot(vec3(0,1,0), normal));
     for (int i = 0; i < MAX_LIGHTS; i++) {
         lights += pointlight(light[i]);
     }
-    color = vec4(lights + dither(uv), 1);
+    color = vec4(normal + dither(uv), 1);
 }

@@ -3,10 +3,10 @@
 
 namespace OK::IO
 {
-    
+
     bool read_file_to_string(const std::string_view filePath, std::string* outString)
     {
-        std::ifstream infile(filePath);
+        std::ifstream infile(filePath.data());
 
         if (!infile) {
             return false;

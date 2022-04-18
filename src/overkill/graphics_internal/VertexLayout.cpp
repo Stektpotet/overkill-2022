@@ -31,7 +31,7 @@ VertexLayout::VertexLayout() : m_attributes{}, m_stride{ 0 } {}
 VertexLayout::VertexLayout(std::initializer_list<Attribute> attributes) : m_attributes{ attributes }, m_stride{ 0 }
 {
 }
-void VertexLayout::applyToBuffer(const VertexBuffer& buffer)
+void VertexLayout::applyToBuffer(const VertexBuffer& buffer) const
 {
     //NOTE: assumes bound VertexArray
     buffer.bind();

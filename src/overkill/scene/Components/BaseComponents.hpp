@@ -1,26 +1,42 @@
 #pragma once
 #include <iostream>
+#include <typeindex>
+#include <vector>
 
 namespace OK
 {
     class Scene;
     class GameObject;
+    struct Transform;
 
     struct Component
     {
+    public:
         friend class GameObject;
-
         GameObject* game_object;
-        virtual void update(float delta_time) {};
+        Transform* const& transform() const;
 
-        virtual void on_created(GameObject* go);
+        virtual const std::vector<std::type_index> component_type_signatures() const;
+
+        virtual void update(float delta_time);
+
+        virtual void late_update(float delta_time);
+
+        virtual void on_created();
+
         virtual void on_start_game();
     };
 
     struct GraphicsComponent : public Component
     {
+        inline virtual const std::vector<std::type_index> component_type_signatures() const override
+        {
+            return { std::type_index(typeid(*this)), std::type_index(typeid(GraphicsComponent)) };
+        }
+
         virtual void render() = 0;
-        virtual void on_created(GameObject* go) override;
+    protected:
+        inline GraphicsComponent() : Component() {};
     };
 
 }

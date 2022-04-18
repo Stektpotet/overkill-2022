@@ -12,13 +12,13 @@
 
 namespace OK
 {
+    class Scene;
     
 struct Rendered
 {
     VertexBuffer* vbos;
     IndexBuffer<std::uint16_t> ibo;
 };
-
 
 class RenderGroup 
 {
@@ -39,8 +39,11 @@ public:
 
 class RenderSystem
 {
-public:
+private:
+    //static ComponentRegistry<SimpleMeshRenderer>* meshRenderers; // Owned by scene
     std::vector<RenderGroup> renderQueue;
+public:
+    void static_batching(OK::Scene& scene);
 };
 
 }

@@ -1,12 +1,83 @@
 #pragma once
 
 #include "MeshUtility.hpp"
+#include <overkill/data/Mesh.hpp>
 
 namespace OK
 {
-    Mesh make_cube(const glm::vec3 scale, const glm::vec3 relative_position, const bool invert)
+    Mesh<> make_terrain(RawTexture16 heightmap, const glm::vec3 scale, const glm::vec3 relative_position)
     {
-        auto indices = std::vector<std::uint16_t> {
+        Mesh<OK::FullVertex, std::uint32_t> terrain_mesh;
+        auto& vertices = terrain_mesh.vertices;
+        vertices.resize(heightmap.width * heightmap.height);
+        terrain_mesh.indices.reserve(heightmap.width * heightmap.height * 6);
+
+        auto appendVertex = [&vertices, heightmap](int index, int x, int y) {
+            constexpr const int SHORT_MAX = 65536;
+            auto intensity = heightmap.pixels[index];
+
+            auto pixelHeight = float(heightmap.pixels[index]) / SHORT_MAX;  // 16bit heightmap
+
+            //REF: https://stackoverflow.com/questions/33736199/calculating-normals-for-a-height-map
+
+            // Relative indices (top, bottom, left, right)
+            const auto Ti = (index - heightmap.width >= 0) ? index - heightmap.width : index + heightmap.width;
+            const auto Bi = (index + heightmap.width < vertices.size()) ? index + heightmap.width : index - heightmap.width;
+            const auto Li = (index - 1 >= 0) ? index - 1 : index + 1;
+            const auto Ri = (index + 1 < vertices.size()) ? index + 1 : index - 1;
+
+            const auto T = float(heightmap.pixels[Ti]) / SHORT_MAX;
+            const auto B = float(heightmap.pixels[Bi]) / SHORT_MAX;
+            const auto L = float(heightmap.pixels[Li]) / SHORT_MAX;
+            const auto R = float(heightmap.pixels[Ri]) / SHORT_MAX;
+
+            float xUnit = 1.0f / heightmap.width;
+            float yUnit = 1.0f / heightmap.height;
+
+            auto tangent = glm::normalize(glm::vec3(2 * xUnit, R - L, 0));
+            auto bitangent = glm::normalize(glm::vec3(0, B - T, 2 * yUnit));
+            auto normal = glm::normalize(glm::cross(bitangent, tangent));
+
+            float xNormalized = (float(x) / heightmap.width);
+            float yNormalized = (float(y) / heightmap.height);
+
+            vertices[index] = FullVertex{
+                { xNormalized, pixelHeight, yNormalized },          //position
+                normal,                                             //normal - //TODO - heightDiff = glm::abs(a-b);
+                { xNormalized, yNormalized },                       //uv
+                tangent,
+                bitangent,
+                { 255u, 255u, 255u, 255u}
+            };
+        };
+
+        // Move accross quad by quad
+        for (std::uint16_t y = 0u; y < heightmap.height - 1; y++)
+        {
+            for (std::uint16_t x = 0u; x < heightmap.width - 1; x++)
+            {
+                std::uint32_t baseIndex = x + y * heightmap.width;
+
+                appendVertex(baseIndex, x, y);  //upper left
+                appendVertex(baseIndex + heightmap.width, x, y);  //lower left
+                appendVertex(baseIndex + 1, x, y);  //upper right
+                appendVertex(baseIndex + heightmap.width + 1, x, y);  //lower right
+
+                terrain_mesh.indices.emplace_back(baseIndex);
+                terrain_mesh.indices.emplace_back(baseIndex + heightmap.width);
+                terrain_mesh.indices.emplace_back(baseIndex + 1);
+                terrain_mesh.indices.emplace_back(baseIndex + 1);
+                terrain_mesh.indices.emplace_back(baseIndex + heightmap.width);
+                terrain_mesh.indices.emplace_back(baseIndex + heightmap.width + 1);
+            }
+        }
+        return terrain_mesh;
+    }
+
+
+    Mesh<> make_cube(const glm::vec3 scale, const glm::vec3 relative_position, const bool invert)
+    {
+        auto indices = std::vector<std::uint32_t> {
             0,  1,  2,      2,  3,  0,
             4,  5,  6,      6,  7,  4,
             8,  9,  10,     10, 11, 8,
@@ -14,37 +85,51 @@ namespace OK
             16, 17, 18,     18, 19, 16,
             20, 21, 22,     22, 23, 20,
         };
+        if (invert) {
+            std::reverse(indices.begin(), indices.end());
+        }
+
+        /*
+        
+            3 - 2
+            | / |
+            0 - 1
+
+            0 - 1
+            | \ |
+            3 - 2
+        */
 
         auto vertices = std::vector<glm::vec3> {
-			{ -0.5f * scale.x, -0.5f * scale.y, -0.5f * scale.z },
-			{  0.5f * scale.x, -0.5f * scale.y, -0.5f * scale.z },
-			{  0.5f * scale.x,  0.5f * scale.y, -0.5f * scale.z },
-			{ -0.5f * scale.x,  0.5f * scale.y, -0.5f * scale.z },
+			{ -0.5f * scale.x, -0.5f * scale.y, 0.5f * scale.z },  // 0
+			{  0.5f * scale.x, -0.5f * scale.y, 0.5f * scale.z },  // 1
+			{  0.5f * scale.x,  0.5f * scale.y, 0.5f * scale.z },  // 2
+			{ -0.5f * scale.x,  0.5f * scale.y, 0.5f * scale.z },  // 3
 
-            { -0.5f * scale.x, -0.5f * scale.y,  0.5f * scale.z },
-            {  0.5f * scale.x, -0.5f * scale.y,  0.5f * scale.z },
-            {  0.5f * scale.x,  0.5f * scale.y,  0.5f * scale.z },
-            { -0.5f * scale.x,  0.5f * scale.y,  0.5f * scale.z },
+            { -0.5f * scale.x,  0.5f * scale.y,  -0.5f * scale.z },
+            {  0.5f * scale.x,  0.5f * scale.y,  -0.5f * scale.z },
+            {  0.5f * scale.x, -0.5f * scale.y,  -0.5f * scale.z },
+            { -0.5f * scale.x, -0.5f * scale.y,  -0.5f * scale.z },
 
             { -0.5f * scale.x,  0.5f * scale.y,  0.5f * scale.z },
             { -0.5f * scale.x,  0.5f * scale.y, -0.5f * scale.z },
             { -0.5f * scale.x, -0.5f * scale.y, -0.5f * scale.z },
             { -0.5f * scale.x, -0.5f * scale.y,  0.5f * scale.z },
 
-            {  0.5f * scale.x,  0.5f * scale.y,  0.5f * scale.z },
-            {  0.5f * scale.x,  0.5f * scale.y, -0.5f * scale.z },
-            {  0.5f * scale.x, -0.5f * scale.y, -0.5f * scale.z },
             {  0.5f * scale.x, -0.5f * scale.y,  0.5f * scale.z },
+            {  0.5f * scale.x, -0.5f * scale.y, -0.5f * scale.z },
+            {  0.5f * scale.x,  0.5f * scale.y, -0.5f * scale.z },
+            {  0.5f * scale.x,  0.5f * scale.y,  0.5f * scale.z },
 
             { -0.5f * scale.x, -0.5f * scale.y, -0.5f * scale.z },
             {  0.5f * scale.x, -0.5f * scale.y, -0.5f * scale.z },
             {  0.5f * scale.x, -0.5f * scale.y,  0.5f * scale.z },
             { -0.5f * scale.x, -0.5f * scale.y,  0.5f * scale.z },
 
-            { -0.5f * scale.x,  0.5f * scale.y, -0.5f * scale.z },
-            {  0.5f * scale.x,  0.5f * scale.y, -0.5f * scale.z },
-            {  0.5f * scale.x,  0.5f * scale.y,  0.5f * scale.z },
             { -0.5f * scale.x,  0.5f * scale.y,  0.5f * scale.z },
+            {  0.5f * scale.x,  0.5f * scale.y,  0.5f * scale.z },
+            {  0.5f * scale.x,  0.5f * scale.y, -0.5f * scale.z },
+            { -0.5f * scale.x,  0.5f * scale.y, -0.5f * scale.z },
 		};
 
 		auto uvs = std::vector<glm::vec2> {
@@ -79,27 +164,43 @@ namespace OK
              { 0.0f,  1.0f, },
 		};
 
-        Mesh mesh = Mesh{ indices, vertices };
-        mesh.uv_coords = uvs;
+        std::vector<glm::vec3> normals, tangents, bitangents;
 
-        regenerate_tbn(mesh);
+        regenerate_tbn(indices, vertices, uvs, normals, tangents, bitangents);
 
+        
+        Mesh<> mesh = Mesh<>();
+        
+        for (size_t i = 0; i < vertices.size(); i++)
+        {
+            mesh.vertices.emplace_back(FullVertex{
+                vertices[i], normals[i], uvs[i], tangents[i], bitangents[i], glm::u8vec4(255U,255U,255U,255U)
+            });
+        }
+        mesh.indices = indices;
         return mesh;
     }
-    void regenerate_tbn(Mesh& mesh)
+    void regenerate_tbn(
+        std::vector<std::uint32_t>& indices,
+        std::vector<glm::vec3>& vertices,
+        std::vector<glm::vec2>& uv,
+        std::vector<glm::vec3>& normals, 
+        std::vector<glm::vec3>& tangents, 
+        std::vector<glm::vec3>& bitangents
+        )
     {
-        mesh.normals.clear();
-        mesh.tangents.clear();
-        mesh.bitangents.clear();
-        mesh.normals.resize(mesh.vertices.size());
-        mesh.tangents.resize(mesh.vertices.size());
-        mesh.bitangents.resize(mesh.vertices.size());
+        normals.clear();
+        tangents.clear();
+        bitangents.clear();
+        normals.resize(vertices.size());
+        tangents.resize(vertices.size());
+        bitangents.resize(vertices.size());
 
-        for (size_t i = 0; i < mesh.indices.size(); i += 3)
+        for (size_t i = 0; i < indices.size(); i += 3)
         {
-            std::uint16_t a = mesh.indices[i];
-            std::uint16_t b = mesh.indices[i + 1];
-            std::uint16_t c = mesh.indices[i + 2];
+            std::uint16_t a = indices[i];
+            std::uint16_t b = indices[i + 1];
+            std::uint16_t c = indices[i + 2];
 
             /*
             
@@ -109,26 +210,26 @@ namespace OK
                   d2
             */
 
-            glm::vec3 d1 = mesh.vertices[b] - mesh.vertices[a];
-            glm::vec3 d2 = mesh.vertices[c] - mesh.vertices[a];
+            glm::vec3 d1 = vertices[b] - vertices[a];
+            glm::vec3 d2 = vertices[c] - vertices[a];
 
-            glm::vec2 dUV1 = mesh.uv_coords[b] - mesh.uv_coords[a];
-            glm::vec2 dUV2 = mesh.uv_coords[c] - mesh.uv_coords[a];
+            glm::vec2 dUV1 = uv[b] - uv[a];
+            glm::vec2 dUV2 = uv[c] - uv[a];
 
             float r = 1.0f / (dUV1.x * dUV2.y - dUV1.y * dUV2.x);
             glm::vec3 tangent = (d1 * dUV2.y - d2 * dUV1.y) * r;
             glm::vec3 bitangent = (d2 * dUV1.x - d1 * dUV2.x) * r;
             glm::vec3 normal = glm::normalize(glm::cross(tangent, bitangent)); // todo: verify direction
 
-            mesh.normals[a] = normal;
-            mesh.normals[b] = normal;
-            mesh.normals[c] = normal;
-            mesh.tangents[a] = tangent;
-            mesh.tangents[b] = tangent;
-            mesh.tangents[c] = tangent;
-            mesh.bitangents[a] = bitangent;
-            mesh.bitangents[b] = bitangent;
-            mesh.bitangents[c] = bitangent;
+            normals[a] = normal;
+            normals[b] = normal;
+            normals[c] = normal;
+            tangents[a] = tangent;
+            tangents[b] = tangent;
+            tangents[c] = tangent;
+            bitangents[a] = bitangent;
+            bitangents[b] = bitangent;
+            bitangents[c] = bitangent;
         }
     }
 }

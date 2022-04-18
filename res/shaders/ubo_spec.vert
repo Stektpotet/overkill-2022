@@ -9,6 +9,7 @@ OF THE UNIVERSAL UBO STRUCTURES UTILISED.
 layout(std140) uniform OK_Matrices{
     mat4 projection;
     mat4 view;  // eye can be accessed through this
+    float time;
 };
 
 struct OK_Light_Directional {

@@ -30,7 +30,7 @@ struct Attribute
 };
 
 
-class VertexLayout 
+struct VertexLayout 
 {
 private:
 	std::vector<Attribute> m_attributes;
@@ -43,7 +43,7 @@ protected:
 
 public:
 
-    void applyToBuffer(const VertexBuffer& buffer);
+    void applyToBuffer(const VertexBuffer& buffer) const;
 
     //NOTE: For some reason, Gfx::GLTypeSize is not reccognized every time, 
     //      making the template very tedious to write out. A new way to write 
@@ -77,7 +77,7 @@ public:
 	}*/
 };
 
-class ContinuousVertexLayout final : public VertexLayout
+struct ContinuousVertexLayout final : public VertexLayout
 {
 public: 
     ContinuousVertexLayout(std::initializer_list<Attribute> initializer);
@@ -85,7 +85,7 @@ protected:
     inline void addStride(GLuint byteSize) final;
 };
 
-class InterleavingVertexLayout final : public VertexLayout
+struct InterleavingVertexLayout final : public VertexLayout
 {
 public:
     InterleavingVertexLayout(std::initializer_list<Attribute> initializer);

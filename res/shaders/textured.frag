@@ -32,7 +32,7 @@ uniform layout(location = 5) vec4 ball_info;  // ball_info.xyz = position,  ball
 uniform layout(location = 6) mat2x3 pad_info; // pad_info[0] = position,    pad_info[1] = dimensions
 uniform layout(location = 7) mat2x3 box_info; // box_info[0] = position,    pad_info[1] = dimensions
 
-uniform layout(location = 8) vec3 ambient_intensity = vec3(0.1, 0.1, 0.1);
+uniform layout(location = 8) vec3 ambient_intensity = vec3(0.5, 0.5, 0.5);
 uniform layout(location = 9) vec3 specular_intensity = vec3(1., 1., 1.);
 uniform float normalmap_strength = 10.;
 

@@ -19,7 +19,17 @@ namespace OK
     //    std::vector<glm::u8vec4> color;
     //};
 
+    /*
+    
+    
 
+    Model
+        VBO
+        VertexLayout
+        LayoutID
+        Mesh
+            Pure Data
+    */
 
     /// <summary>
     /// 

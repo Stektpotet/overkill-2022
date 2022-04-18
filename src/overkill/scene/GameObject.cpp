@@ -8,10 +8,15 @@ namespace OK
         , components{}
     {
     }
-    const Scene* const GameObject::get_scene() const
+    const Scene* const& GameObject::get_scene() const
     {
         return scene;
     }
+    Transform* const& GameObject::get_transform() const
+    {
+        return transform;
+    }
+
     GameObject::~GameObject()
     {
         std::cout << "Destroying GameObject: '" << name << "'..." << std::endl;

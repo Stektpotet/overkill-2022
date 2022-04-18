@@ -4,11 +4,13 @@
 #include <memory>
 
 #include "BaseComponents.hpp"
-#include "../GameObject.hpp"
-#include "../Scene.hpp"
+//#include "../GameObject.hpp"
+//#include "../Scene.hpp"
 
 namespace OK
 {
+    class Scene;
+    class GameObject;
 
     struct Transform : public Component
     {
@@ -25,9 +27,13 @@ namespace OK
 
         //Transform(GameObject* owner);
 
-        virtual void on_created(GameObject* go) override;
+        virtual void on_created() override;
+
         void set_parent(Transform* transform);
         void orphan();
+
+        const glm::mat4 get_trs() const;
+        const glm::mat4 local_trs() const;
 
     private:
         friend class Scene;

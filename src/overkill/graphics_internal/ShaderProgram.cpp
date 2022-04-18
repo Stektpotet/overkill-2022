@@ -42,6 +42,12 @@ ShaderProgram::ShaderProgram(UnlinkedShaderProgram unlinked) : id(unlinked.id)
 	}
 }
 
+ShaderProgram::ShaderProgram()
+    : id{ 0 }
+{
+    std::cout << "Do nothing\n";
+}
+
 void
 ShaderProgram::bind() const
 {

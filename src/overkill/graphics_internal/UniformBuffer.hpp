@@ -49,7 +49,7 @@ private:
 public:
     BlockLayout(const char* name = "", std::initializer_list<std::pair<const char*, int>> elements = {});
     inline GLsizei size() const { return m_blockSize; }
-    explicit operator std::string() const;
+    inline std::string get_name() const { return m_name; }
     GLuint indexOfUniform(const std::string& name) const
     {
         auto search = m_vars.find(name); //@TODO discuss usage of at() as it works just as well here
@@ -117,7 +117,7 @@ private:
 public:
 
     UniformBuffer() = default;
-    UniformBuffer(const char* name, const BlockLayout& layout, const GLenum drawMode);
+    UniformBuffer(const BlockLayout& layout, const GLenum drawMode);
 
     inline explicit operator std::string() const
     {
@@ -158,10 +158,28 @@ public:
         return m_blockLayout.indexOfUniform(name);
     }
 
-    inline void update(const int index, GLsizeiptr size, const void* data)
+    /// <summary>
+    /// Binding happens automatically before an update!
+    /// </summary>
+    /// <param name="offset"></param>
+    /// <param name="size"></param>
+    /// <param name="data"></param>
+    inline void update(const int offset, GLsizeiptr size, const void* data)
     {
         glBindBuffer(GL_UNIFORM_BUFFER, m_id);
-        glBufferSubData(GL_UNIFORM_BUFFER, index, size, data);
+        glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+    
+    /// <summary>
+    /// Binding happens automatically before an update!
+    /// </summary>
+    /// <param name="size"></param>
+    /// <param name="data"></param>
+    inline void update(GLsizeiptr size, const void* data)
+    {
+        glBindBuffer(GL_UNIFORM_BUFFER, m_id);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, size, data);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 };
