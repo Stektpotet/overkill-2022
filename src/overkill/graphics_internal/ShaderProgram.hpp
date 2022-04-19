@@ -15,8 +15,8 @@ class UnlinkedShaderProgram
     friend class ShaderProgram;
     GLuint id;
 
-    UnlinkedShaderProgram();
     //UnlinkedShaderProgram(const ShaderSources& src);
+    UnlinkedShaderProgram(); // only friends can make one
 public:
 
     GLuint attachShader(std::string_view src, GLenum shaderType);
@@ -24,10 +24,10 @@ public:
 
 class ShaderProgram 
 {
-private:
+public: // TODO: make private again -> put as public for debugging purposes
     friend class ShaderSystem; // Give access to creation of shaders from the shadersystem
 
-    GLuint id;
+    GLuint id = 0;
     //caching mechanism
     std::unordered_map<std::string, GLint> attributes;
     std::unordered_map<std::string, GLint> uniforms;
@@ -35,6 +35,8 @@ private:
     ShaderProgram(UnlinkedShaderProgram unlinkedProgramID);
 public:
     ShaderProgram(const ShaderProgram&) = default;
+
+    ShaderProgram();
 
 	explicit inline operator GLuint() const { return id; }
 

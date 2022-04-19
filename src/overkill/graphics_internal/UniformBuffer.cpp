@@ -11,13 +11,8 @@ namespace OK
         }
     }
 
-    BlockLayout::operator std::string() const
-    {
-        return m_name;
-    }
-
-    UniformBuffer::UniformBuffer(const char* name, const BlockLayout& layout, const GLenum drawMode)
-        : m_name(name)
+    UniformBuffer::UniformBuffer(const BlockLayout& layout, const GLenum drawMode)
+        : m_name(layout.get_name())
         , m_blockLayout(layout)
     { 
         glGenBuffers(1, &m_id);

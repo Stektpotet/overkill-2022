@@ -1,0 +1,69 @@
+#version 430 core
+// ON NVIDIA CARD -> so we strive for a warp size of 32
+layout(local_size_x = 8, local_size_y = 4) in;
+
+layout(std430, binding = 0) buffer OK_Voronoi
+{
+    vec2 voronoiPoints[];
+};
+layout(r32f, binding = 1) uniform image2D img_output;
+
+uniform layout(location = 2) vec2 resolution;
+uniform layout(location = 3) int cells_per_axis;
+
+
+float rand(vec2 co) { return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * 43758.5453); }
+
+ivec3 wrapDirection(int p)
+{
+    return ivec3((p + 1) % cells_per_axis, p, ((p - 1) < 0) ? cells_per_axis - 1 : p - 1);
+}
+
+vec2 worley(in vec2 uv)
+{
+    ivec2 cell = ivec2(floor(uv * cells_per_axis));
+    vec2 c_uv = fract(uv * cells_per_axis);
+    
+    // Make the texture wrap around by sampling points from the "neighbours" on the opposite side
+    // Get the indices of neighbouring cells
+    ivec3 xDir = wrapDirection(cell.x);
+    ivec3 yDir = wrapDirection(cell.y) * cells_per_axis;
+
+    // Neighbouring points
+    vec2 virtualPoints[8] = {
+        fract(voronoiPoints[xDir.z + yDir.z] * cells_per_axis) + vec2(-1, -1),
+        fract(voronoiPoints[xDir.y + yDir.z] * cells_per_axis) + vec2(0, -1),
+        fract(voronoiPoints[xDir.x + yDir.z] * cells_per_axis) + vec2(1, -1),
+
+        fract(voronoiPoints[xDir.z + yDir.y] * cells_per_axis) + vec2(-1, 0),
+        /*index*/
+        fract(voronoiPoints[xDir.x + yDir.y] * cells_per_axis) + vec2( 1, 0),
+
+        fract(voronoiPoints[xDir.z + yDir.x] * cells_per_axis) + vec2(-1, 1),
+        fract(voronoiPoints[xDir.y + yDir.x] * cells_per_axis) + vec2(0, 1),
+        fract(voronoiPoints[xDir.x + yDir.x] * cells_per_axis) + vec2(1, 1),
+    };
+    
+    vec2 closest = fract(voronoiPoints[cell.x + cell.y * cells_per_axis] * cells_per_axis) - c_uv;
+    for (uint i = 0; i < 8; i++)
+    {
+        vec2 v = virtualPoints[i] - c_uv;
+        if (dot(v, v) < dot(closest, closest)) //'dot' is faster than 'distance' because of sqrt
+            closest = v;
+    }
+
+    return closest;
+}
+
+void main() {
+    // base pixel colour for image
+    // get index in global work group i.e x,y position
+    ivec2 id = ivec2(gl_GlobalInvocationID.xy);
+    vec2 uv = id / resolution;
+  
+    vec2 closest = worley(uv);
+
+    vec3 c = 1 - sqrt(dot(closest, closest)).xxx;
+
+    imageStore(img_output, id, vec4(c, 1.0));
+}

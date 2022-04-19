@@ -12,35 +12,38 @@
 
 namespace OK
 {
+    class Scene;
     
-struct Rendered 
+struct Rendered
 {
-    VertexBuffer vbo;
+    VertexBuffer* vbos;
     IndexBuffer<std::uint16_t> ibo;
 };
-
 
 class RenderGroup 
 {
     VertexArray vao;
     ShaderProgram program;
 
-    std::vector<Rendered> rendered_items;
+    std::vector<Rendered*> rendered_items;
 
 public:
-    void add(Rendered item);
+    //void add(Rendered item);
 
-    void bind() const
+    /*void bind() const
     {
         vao.bind();
         program.bind();
-    }
+    }*/
 };
 
 class RenderSystem
 {
-public:
+private:
+    //static ComponentRegistry<SimpleMeshRenderer>* meshRenderers; // Owned by scene
     std::vector<RenderGroup> renderQueue;
+public:
+    void static_batching(OK::Scene& scene);
 };
 
 }

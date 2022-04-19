@@ -11,6 +11,7 @@ namespace OK
 {
     class ShaderFiles
     {
+        friend ShaderSystem;
         std::unordered_map<std::string, std::string> vertex_shaders;
         std::unordered_map<std::string, std::string> fragment_shaders;
         std::unordered_map<std::string, std::string> geometry_shaders;
@@ -20,37 +21,52 @@ namespace OK
 
     public:
         bool getSrc(const char * name, GLenum type, std::string * str);
-        static ShaderFiles enlistShaderFiles(const char * root);
+        //static ShaderFiles enlistShaderFiles(const char * root);
     };
 
 
     class ShaderSystem
     {
-        ShaderFiles files;
-        static constexpr char errShaderSource[] = ""; // TODO make a minimal passing error-shader
+        static ShaderFiles files;
+        static constexpr const char errShaderSource[] = ""; // TODO make a minimal passing error-shader
         //ShaderProgram errShader;
 
-        std::unordered_map<std::string, ShaderProgram> computeShaders;
-        std::unordered_map<std::string, ShaderProgram> shaders;
-        std::unordered_map<std::string, UniformBuffer> uniformBuffers;
+        static std::unordered_map<std::string, ShaderProgram*> computeShaders;
+        static std::unordered_map<std::string, ShaderProgram*> shaders;
+        static std::unordered_map<std::string, UniformBuffer*> uniformBuffers;
+
+    private:
+        ShaderSystem() {};
 
     public:
-        ShaderSystem(const char* shader_root);
+        static constexpr const char DEFAULT[] = "__DEFAULT__";
+        static constexpr const char VIEWPORT_DEFAULT[] = "__VIEWPORT_DEFAULT__";
+        static void add_shader_sources(const char* directory);
 
-        ShaderProgram* get(const char* name);
-        ShaderProgram push(const char* name, const std::initializer_list<std::pair<GLenum, const char*>> src);
+        static ShaderProgram* const get(const char* name);
+        static ShaderProgram* const push(const char* name, const std::initializer_list<std::pair<GLenum, const char*>> src);
 
+        static ShaderProgram* const get_compute(const char* name);
+        static ShaderProgram* const push_compute(const char* name, const char* src);
+        static ShaderProgram* const push_compute(const char* name);
 
-
+        static UniformBuffer* const get_uniform_buffer(const char* name);
+        
         template<GLenum DrawMode>
-        UniformBuffer makeUniformBuffer(const char* name, const BlockLayout& layout)
+        static UniformBuffer* const makeUniformBuffer(const BlockLayout& layout)
         {
-            auto ubo = UniformBuffer(name, layout, DrawMode);
-            uniformBuffers.emplace(std::make_pair(name, ubo));
-            return ubo;
+            auto name = layout.get_name();
+            uniformBuffers.emplace(name, new UniformBuffer(layout, DrawMode));
+            return uniformBuffers[name];
         }
 
-        void bindUniformBlocks();
+        template<GLenum DrawMode>
+        static UniformBuffer* makeUniformBuffer(const char* name = "", std::initializer_list<std::pair<const char*, int>> elements = {})
+        {
+            return makeUniformBuffer<DrawMode>(BlockLayout(name, elements));
+        }
+
+        static void bindUniformBlocks();
 
     };
 

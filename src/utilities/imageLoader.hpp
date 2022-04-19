@@ -5,6 +5,6 @@
 #include <vector>
 #include <string>
 
-OK::RawTexture loadPNGFile(std::string fileName);
+OK::RawTexture8 loadPNGFile(std::string fileName);
 
-void savePNGFile(std::string fileName, const OK::RawTexture image);
+void savePNGFile(std::string fileName, const OK::RawTexture8 image);

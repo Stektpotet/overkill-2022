@@ -18,6 +18,7 @@ out layout(location = 3) mat3 TBN;
 
 void main()
 {
+//    mat4 MVP = projection * view * TRS;
     uv_out = uv;
     normal_out = normalize(NRM * normalize(normal));
     TBN = mat3( // Tangent space to world space

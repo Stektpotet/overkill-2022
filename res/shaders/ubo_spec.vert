@@ -1,15 +1,11 @@
 #version 430 core
 #define MAX_LIGHTS 16
 
+
 /*
 THIS SHADER IS ONLY MEANT AS A DECLARATION 
 OF THE UNIVERSAL UBO STRUCTURES UTILISED.
 */
-
-layout(std140) uniform OK_Matrices{
-    mat4 projection;
-    mat4 view;  // eye can be accessed through this
-};
 
 struct OK_Light_Directional {
 	vec4 direction;
@@ -26,8 +22,20 @@ struct OK_Light_Point {
 };
 
 layout(std140) uniform OK_Lights{
+    OK_Light_Directional sun;
     OK_Light_Point light[MAX_LIGHTS];
 };
+
+layout(std140) uniform OK_Commons{
+    mat4 projection;
+    mat4 view;
+    mat4 view_projection;
+    mat4 view_projection_inv;
+    vec4 cam_direction;
+    vec4 cam_settings;
+    vec4 time;
+};
+#define eye vec3(view[3])
 
 in layout(location = 0) vec3 position;
 in layout(location = 1) vec3 normal;
@@ -38,7 +46,7 @@ in layout(location = 4) vec3 bitangent;
 uniform layout(location = 0) mat4 MVP;
 uniform layout(location = 1) mat4 TRS;
 uniform layout(location = 2) mat3 NRM;
-uniform layout(location = 3) vec3 eye;
+//uniform layout(location = 3) vec3 eye;
 
 out layout(location = 0) vec4 position_out;
 out layout(location = 1) vec3 normal_out;

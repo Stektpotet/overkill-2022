@@ -4,6 +4,7 @@
 // In order to be able to calculate when the getTimeDeltaSeconds() function was last called, we need to know the point in time when that happened. This requires us to keep hold of that point in time.
 // We initialise this value to the time at the start of the program.
 static std::chrono::steady_clock::time_point _previousTimePoint = std::chrono::steady_clock::now();
+static std::chrono::steady_clock::time_point _startTime = std::chrono::steady_clock::now();
 
 // Calculates the elapsed time since the previous time this function was called.
 double getTimeDeltaSeconds() {
@@ -20,4 +21,13 @@ double getTimeDeltaSeconds() {
 
 	// Return the calculated time delta in seconds
 	return timeDeltaSeconds;
+}
+
+double getTimeSeconds()
+{
+    std::chrono::steady_clock::time_point currentTime = std::chrono::steady_clock::now();
+    long long timeDelta = std::chrono::duration_cast<std::chrono::nanoseconds>(currentTime - _startTime).count();
+    double timeDeltaSeconds = (double)timeDelta / 1000000000.0;
+    // Return the calculated time delta since startup in seconds
+    return timeDeltaSeconds;
 }

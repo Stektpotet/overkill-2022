@@ -10,7 +10,6 @@
 #include <SFML/System/Time.hpp>
 #include <utilities/shapes.h>
 #include <utilities/glutils.h>
-#include <utilities/shader.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <utilities/timeutils.h>
 
@@ -25,7 +24,7 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
     glEnable(GL_CULL_FACE);
 
     // Disable built-in dithering
-    glDisable(GL_DITHER);
+    //glDisable(GL_DITHER);
 
     // Enable transparency
     glEnable(GL_BLEND);
@@ -42,16 +41,11 @@ void runProgram(GLFWwindow* window, CommandLineOptions options)
 	    // Clear colour and depth buffers
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-        updateFrame(window);
-        renderFrame(window);
-
-
-
-
-
         // Handle other events
         glfwPollEvents();
+
+        run_gameloop(window);
+
         handleKeyboardInput(window);
 
         // Flip buffers

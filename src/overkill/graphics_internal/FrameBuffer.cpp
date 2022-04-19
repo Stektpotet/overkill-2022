@@ -69,7 +69,7 @@ namespace OK
     void FrameBuffer::unbind() const
     {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, WINDOW_HEIGHT, WINDOW_WIDTH); // TODO: have these be specified through arguments instead
+        glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT); // TODO: have these be specified through arguments instead
     }
 
     void FrameBuffer::clean()

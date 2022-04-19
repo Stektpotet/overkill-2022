@@ -14,6 +14,7 @@ private:
     //TODO: Make restore constructors which build the buffers up from the GPU
 public:
 	//GLsizeiptr is used because its capacity is larger than that of GLsizei
+    VertexBuffer() = default;
 	VertexBuffer(const GLsizeiptr size, const void * data = nullptr);
 	VertexBuffer(const GLsizeiptr size, std::initializer_list<std::pair<const GLsizeiptr, const void*>> data);
 
