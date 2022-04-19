@@ -7,10 +7,16 @@
 namespace OK
 {
     std::unordered_map<std::string, Texture2D> TextureSystem::textures;
+    std::unordered_map<std::string, Texture3D> TextureSystem::textures3D;
 
     auto TextureSystem::get2D(const char* tag) -> const Texture2D
     {
-        return TextureSystem::textures[tag];
+        auto& found = textures.find(tag);
+        if (found != textures.end())
+            return found->second;
+
+        std::cout << "WARN: [TextureSystem] unable to find \"" << tag << "\", loading default instead..." << std::endl;
+        return TextureSystem::textures[DEFAULT];
     }
 
     void TextureSystem::push2D(const char* tag, const std::string& filepath)
@@ -28,14 +34,21 @@ namespace OK
 
     void TextureSystem::load(const char* directory)
     {
-        for (const auto& entry : std::filesystem::directory_iterator(directory))
+        bool found_directory = std::filesystem::exists(directory);
+        if (found_directory)
         {
-            auto path = entry.path();
-            if (!path.has_stem())
-                continue;
-            TextureSystem::push2D(path.stem().string().data(), path.string());
+            for (const auto& entry : std::filesystem::directory_iterator(directory))
+            {
+                auto path = entry.path();
+                if (!path.has_stem())
+                    continue;
+                TextureSystem::push2D(path.stem().string().data(), path.string());
+            }
         }
-        
+        else
+        {
+            std::cout << "WARN: [TextureSystem] Was unable to load textures from " << directory << std::endl;
+        }
         // TODO: Load these from the file system somehow
         std::uint8_t white_pixels[64];
         std::fill_n(white_pixels, 64, 255u);
@@ -57,7 +70,7 @@ namespace OK
         auto& found = textures.find(tag);
         if (found != textures.end())
         {
-            if (&found->second == &texture)
+            if (found->second.getID() == texture.getID())
                 return false;
             found->second.clean(); 
         }
@@ -89,4 +102,27 @@ namespace OK
         return 0;
     }
 
+    auto TextureSystem::push3D(const char* tag, Texture3D texture) -> bool {
+        auto& found = textures3D.find(tag);
+        if (found != textures3D.end())
+        {
+            if (found->second.getID() == texture.getID())
+                return false;
+            found->second.clean();
+        }
+        TextureSystem::textures3D.emplace(tag, texture);
+        std::cout << "INFO:\tTexture \"" << tag << "\" from memory" << std::endl;
+        return true;
+    }
+
+    auto TextureSystem::get3D(const char* tag) -> const Texture3D
+    {
+        auto& found = textures3D.find(tag);
+        if (found != textures3D.end())
+            return found->second;
+
+        std::cout << "WARN: [TextureSystem] unable to find \"" << tag << "\", loading default instead..." << std::endl;
+        std::cout << "ERR: [TextureSystem] 3D default is not implemented yet!" << std::endl;
+        return TextureSystem::textures3D[DEFAULT];
+    }
 }

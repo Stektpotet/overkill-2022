@@ -68,7 +68,7 @@ namespace OK
         Transform* const & root() const;
         Camera* const& active_camera() const;
         GameObject *& add_game_object(const char* name);
-        void propagate_scene_graph();
+        void propagate_scene_graph(); 
 
         template<typename T>
         const std::vector<T*>& get_components()
@@ -81,11 +81,14 @@ namespace OK
         void update(float dt);
         void late_update(float dt);
         
+        void set_viewport_shader(ShaderProgram* program);
+        void print_scene_graph() const;
+
     private:
 
         template<typename T>
         void register_component(T* component) {
-            std::cout << "INFO: Register component " << component->game_object->get_name() << "::" << typeid(*component).name() << std::endl;
+            std::cout << "DEBUG: Register component " << component->game_object->get_name() << "::" << typeid(*component).name() << std::endl;
             auto v = component->component_type_signatures();
             for (const auto& typeIndex : v)
             {
@@ -106,6 +109,7 @@ namespace OK
         }
 
         void propagate_trs(Transform* transform, glm::mat4 parent_trs);
+        void print_scene_graph_internal(Transform* transform = nullptr, int indent=1) const;
 
         ~Scene();
     };

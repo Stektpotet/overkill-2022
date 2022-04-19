@@ -37,6 +37,19 @@ namespace OK
         const glm::mat4 get_trs() const;
         const glm::mat4 local_trs() const;
 
+        inline glm::vec3 forward() const
+        {
+            return rotation * glm::vec3{ 0, 0, 1 };
+        }
+        inline glm::vec3 up() const
+        {
+            return rotation * glm::vec3{ 0, 1, 0 };
+        }
+        inline glm::vec3 right() const
+        {
+            return rotation * glm::vec3{ 1, 0, 0 };
+        }
+
     private:
         friend class Scene;
 

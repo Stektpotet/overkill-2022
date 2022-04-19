@@ -44,9 +44,14 @@ namespace OK
         static void add_shader_sources(const char* directory);
 
         static ShaderProgram* const get(const char* name);
-        static UniformBuffer* const get_uniform_buffer(const char* name);
         static ShaderProgram* const push(const char* name, const std::initializer_list<std::pair<GLenum, const char*>> src);
 
+        static ShaderProgram* const get_compute(const char* name);
+        static ShaderProgram* const push_compute(const char* name, const char* src);
+        static ShaderProgram* const push_compute(const char* name);
+
+        static UniformBuffer* const get_uniform_buffer(const char* name);
+        
         template<GLenum DrawMode>
         static UniformBuffer* const makeUniformBuffer(const BlockLayout& layout)
         {

@@ -7,8 +7,12 @@
 
 namespace OK
 {
-void Rotator::update(float dt)
+    void Rotator::on_created()
+    {
+        transform()->rotation = glm::quatLookAt(glm::vec3{ 1,0,0 }, rotation_axis);
+    }
+    void Rotator::update(float dt)
 {
-    //transform()->rotation = glm::angleAxis()
+    transform()->rotation = glm::rotate(transform()->rotation, glm::radians(time_rate), rotation_axis);
 }
 }

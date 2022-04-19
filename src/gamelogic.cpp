@@ -41,6 +41,7 @@ enum KeyFrameAction {
 #include <overkill/scene/Components/Transform.hpp>
 #include <overkill/scene/Components/SimpleMeshRendered.hpp>
 #include <overkill/scene/Components/Rotator.hpp>
+#include <overkill/scene/Input.hpp>
 #include <overkill/io.hpp>
 
 #ifndef TINYOBJLOADER_IMPLEMENTATION
@@ -49,6 +50,8 @@ enum KeyFrameAction {
 #include <tiny_obj_loader.h>
 #include <overkill/scene/MeshUtility.hpp>
 #include <overkill/TextureSystem.hpp>
+#include <program.hpp>
+#include <overkill/scene/Components/CloudController.hpp>
 
 double padPositionX = 0;
 double padPositionZ = 0;
@@ -62,8 +65,8 @@ SceneNode* ballNode;
 SceneNode* padNode;
 SceneNode* textNode;
 
-OK::UniformBuffer* lightBuffer;
-OK::UniformBuffer* matrixBuffer;
+OK::UniformBuffer* light_buffer;
+OK::UniformBuffer* matrix_buffer;
 
 OK::RenderSystem renderSystem;
 OK::Scene* scene;
@@ -107,24 +110,14 @@ double gameElapsedTime = debug_startTime;
 double mouseSensitivity = 1.0;
 double lastMouseX = WINDOW_WIDTH / 2;
 double lastMouseY = WINDOW_HEIGHT / 2;
-void mouseCallback(GLFWwindow* window, double x, double y) {
-    int windowWidth, windowHeight;
-    glfwGetWindowSize(window, &windowWidth, &windowHeight);
-    glViewport(0, 0, windowWidth, windowHeight);
 
-    double deltaX = x - lastMouseX;
-    double deltaY = y - lastMouseY;
 
-    padPositionX -= mouseSensitivity * deltaX / windowWidth;
-    padPositionZ -= mouseSensitivity * deltaY / windowHeight;
-
-    if (padPositionX > 1) padPositionX = 1;
-    if (padPositionX < 0) padPositionX = 0;
-    if (padPositionZ > 1) padPositionZ = 1;
-    if (padPositionZ < 0) padPositionZ = 0;
-
-    glfwSetCursorPos(window, windowWidth / 2, windowHeight / 2);
-}
+//void mouseCallback(GLFWwindow* window, double x, double y) {
+//    double deltaX = x - lastMouseX;
+//    double deltaY = y - lastMouseY;
+//
+//    glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
+//}
 
 PointLight lights[NUM_LIGHTS];
 
@@ -138,21 +131,40 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 
     options = gameOptions;
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    glfwSetCursorPosCallback(window, mouseCallback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    glfwSwapInterval(1);
+
+    // ========================== Input "System" setup ==========================
+
+    glfwSetKeyCallback(window, OK::Input::OnInputKey);
+    glfwSetCursorPosCallback(window, OK::Input::OnCursorHover);
+    glfwSetScrollCallback(window, OK::Input::OnScrollChange);
+    glfwSetMouseButtonCallback(window, OK::Input::OnMouseClick);
 
 
-    OK::TextureSystem::load("../res/textures/");
+    // ========================== Shader System setup ==========================
 
     OK::ShaderSystem::add_shader_sources("../res/shaders");
+    OK::ShaderSystem::add_shader_sources("../res/compute_shaders");
 
-    OK::ShaderProgram* default_shader = OK::ShaderSystem::push(OK::ShaderSystem::DEFAULT, { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "simple"} });
-    OK::ShaderProgram* default_viewport_shader = OK::ShaderSystem::push(OK::ShaderSystem::VIEWPORT_DEFAULT, { {GL_VERTEX_SHADER, "viewport"}, {GL_FRAGMENT_SHADER, "viewport"} });
-    OK::ShaderProgram* uiShader = OK::ShaderSystem::push("UI", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "text"} });
-    OK::ShaderProgram* simpleGeometryShader = OK::ShaderSystem::push("simpleGeometry", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "simple"} });
-    OK::ShaderProgram* texturedShader = OK::ShaderSystem::push("walls", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "textured"} });
+    OK::ShaderSystem::push("skybox", { {GL_VERTEX_SHADER, "skybox"}, {GL_FRAGMENT_SHADER, "skybox"} });
 
+    //TODO: have the defualt shaders be pushed into the system by default
+    OK::ShaderSystem::push(OK::ShaderSystem::DEFAULT, { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "simple"} });
+    OK::ShaderSystem::push(OK::ShaderSystem::VIEWPORT_DEFAULT, { {GL_VERTEX_SHADER, "viewport"}, {GL_FRAGMENT_SHADER, "viewport"} });
+    OK::ShaderSystem::push("clouds", { {GL_VERTEX_SHADER, "viewport"}, {GL_FRAGMENT_SHADER, "clouds"} });
+    OK::ShaderSystem::push("UI", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "text"} });
+    OK::ShaderSystem::push("terrain", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "terrain"} });
+    OK::ShaderSystem::push("walls", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "textured"} });
+    OK::ShaderSystem::push("skybox", { {GL_VERTEX_SHADER, "skybox"}, {GL_FRAGMENT_SHADER, "skybox"} });
+    auto worley = OK::ShaderSystem::push_compute("worley");
+    auto worley3d = OK::ShaderSystem::push_compute("worley3d");
+
+
+    // ======== Uniform Buffer setup ========
     OK::BlockLayout lightBufferLayout("OK_Lights");
+    lightBufferLayout.pushBlock(OK::BlockLayout("sun", { { "direction", 16 }, { "intensities", 16 } }));
     lightBufferLayout.pushBlockArray(
         OK::BlockLayout("light", {
             {"position",    16},
@@ -166,12 +178,14 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
         MAX_LIGHTS
     );
 
-
-    lightBuffer = OK::ShaderSystem::makeUniformBuffer<GL_DYNAMIC_DRAW>(lightBufferLayout);
-    matrixBuffer = OK::ShaderSystem::makeUniformBuffer<GL_DYNAMIC_DRAW>("OK_Commons", { { "projection", 64 }, { "view", 64 } });
+    light_buffer = OK::ShaderSystem::makeUniformBuffer<GL_DYNAMIC_DRAW>(lightBufferLayout);
+    matrix_buffer = OK::ShaderSystem::makeUniformBuffer<GL_DYNAMIC_DRAW>("OK_Commons", { { "projection", 64 }, { "view", 64 },  { "view_projection", 64 }, { "view_projection_inv", 64 },{"cam_direction", 16}, {"cam_settings", 16}, {"time", 16} });
+    auto cloud_buffer = OK::ShaderSystem::makeUniformBuffer<GL_STATIC_DRAW>("OK_Clouds", { { "bounds_min", 16 }, { "bounds_max", 16 } });
     OK::ShaderSystem::bindUniformBlocks();
 
+    // ================= Texture system setup & Frame buffer ==================
 
+    OK::TextureSystem::load("../res/textures/");
     OK::FrameBuffer* mainFrameBuffer = new OK::FrameBuffer(WINDOW_WIDTH, WINDOW_HEIGHT, { GL_NEAREST, GL_CLAMP_TO_EDGE });
     OK::TextureSystem::push2D("__RTEX_COLOR__", mainFrameBuffer->attachRenderTexture());
     OK::TextureSystem::push2D("__RTEX_DEPTH__", mainFrameBuffer->attachDepthTexture());
@@ -179,148 +193,126 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
         std::cout << "WARN: Framebuffer was not completed!" << std::endl;
     mainFrameBuffer->unbind();
 
+
+
+    // =================  3D Worley Noise Generation  ==================
+
+    int tex_w = 500, tex_h = 500, tex_d = 120;
+    auto worley_texture = OK::Texture3D(tex_w, tex_h, tex_d, 1, { GL_LINEAR, GL_REPEAT });
+    OK::TextureSystem::push3D("worley", worley_texture);    
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, tex_w, tex_h, tex_d, 0, GL_RGBA, GL_FLOAT, nullptr);
+    glBindImageTexture(1, worley_texture.getID(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
+    
+    // Generate 1000 points inside of the 3d volume
+    const int cells_per_axis = 10;
+    glm::vec3 rand_points[cells_per_axis * cells_per_axis * cells_per_axis];
+
+    float cell_size = 1.0f / cells_per_axis;
+
+    for (size_t z = 0; z < cells_per_axis; z++)
+    {
+        for (size_t y = 0; y < cells_per_axis; y++)
+        {
+            for (size_t x = 0; x < cells_per_axis; x++)
+            {
+                rand_points[x + y * cells_per_axis + z * cells_per_axis * cells_per_axis] 
+                    = glm::linearRand(glm::vec3(x, y, z), glm::vec3(x + cell_size, y + cell_size, z + cell_size));
+            }
+        }
+    }
+
+    // Transfer the point data through shader storage
+    GLuint ssbo;
+    glGenBuffers(1, &ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(rand_points), rand_points, GL_STATIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo); //set binding point to 0
+    //glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); //unbind
+
+
+    worley3d->bind();
+    glUniform3f(worley3d->getUniformLocation("resolution"), tex_w, tex_h, tex_d);
+    glUniform1i(worley3d->getUniformLocation("cells_per_axis"), cells_per_axis);
+    glDispatchCompute((GLuint)tex_w, (GLuint)tex_h, (GLuint)tex_d);
+    glBindTextureUnit(0, worley_texture.getID());
+    // make sure writing to image has finished before read
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
+
+
+    // ========================== Scene construction ==========================
+
     scene = new OK::Scene("Test Scene");
     scene->main_framebuffer = mainFrameBuffer;
-
-    auto game_object =  scene->add_game_object("helloworld");
-
-    game_object = scene->add_game_object("hello");
-    game_object->add_component<OK::Rotator>();
-
-    auto game_object2 = scene->add_game_object("world");
-    game_object2->get_transform()->set_parent(game_object->get_transform());
-    auto renderer = game_object2->add_component<OK::SimpleMeshRenderer>();
-
-    scene->active_camera()->transform()->position = {0, 1, 5};
-    scene->active_camera()->transform()->rotation = glm::quat(glm::vec3{ glm::radians(-20.0f), 0, 0 });
-
-    auto terrain_renderer = scene->add_game_object("ground")->add_component<OK::SimpleMeshRenderer>();
     
-    OK::Mesh cube_mesh = OK::make_cube(glm::vec3(4,2,4), glm::vec3(0), true);
+    //scene->set_viewport_shader(OK::ShaderSystem::get("clouds")); // Disabled as 
+    scene->active_camera()->transform()->position = { 0, 20, -100 };
+
+    //auto game_object =  scene->add_game_object("helloworld");
+
+    auto sun_object = scene->add_game_object("sun");
+    sun_object->add_component<OK::Rotator>();
+    sun_object->add_component<OK::LightSource>()->light_type = OK::LightSource::Type::DIRECTIONAL;
+    
+
+    auto cube = scene->add_game_object("cube");
+    cube->get_transform()->set_parent(sun_object->get_transform());
+    auto renderer = cube->add_component<OK::SimpleMeshRenderer>();
+
+    //TODO: clean up model and mesh composition and implement multi-mesh and static batching
+    OK::Mesh cube_mesh = OK::make_cube(glm::vec3(1, 1, 1));
     OK::Model* model = new OK::Model();
     model->vao.bind();
     model->renderables.emplace_back(OK::Renderable{ cube_mesh, OK::ShaderSystem::get("walls") });
     model->vbo = OK::VertexBuffer(cube_mesh.size(), cube_mesh.vertices.data());
     cube_mesh.vertex_layout.applyToBuffer(model->vbo);
     renderer->model = model;
+
+
+    auto terrain_renderer = scene->add_game_object("ground")->add_component<OK::SimpleMeshRenderer>();
     
-    auto terrain_mesh = OK::make_terrain(OK::IO::read_raw_texture<std::uint16_t>("../res/heightmap.png"), glm::vec3(504 / 2, 20, 1004 / 2));
+    auto heightmap = OK::IO::read_raw_texture<std::uint16_t>("../res/trondheim.png");
+    auto terrain_mesh = OK::make_terrain(heightmap, glm::vec3(heightmap.width / 2, 40, heightmap.height / 2), glm::vec3(-heightmap.width / 4,0, -heightmap.height / 4));
     OK::Model* terrain_model = new OK::Model();
     terrain_model->vao.bind();
-    terrain_model->renderables.emplace_back(terrain_mesh, OK::ShaderSystem::get("__DEFAULT__"));
+    terrain_model->renderables.emplace_back(terrain_mesh, OK::ShaderSystem::get("terrain"));
     terrain_model->vbo = OK::VertexBuffer(terrain_mesh.size(), terrain_mesh.vertices.data());
     terrain_mesh.vertex_layout.applyToBuffer(terrain_model->vbo);
     terrain_renderer->model = terrain_model;
-    terrain_renderer->transform()->position = glm::vec3(-125, -15, -250);
-    terrain_renderer->transform()->scale = glm::vec3(252, 75, 502);
+
+    auto skybox_object = scene->add_game_object("skybox");
+    auto skybox_renderer = skybox_object->add_component<OK::SimpleMeshRenderer>();
+
+    OK::Mesh skybox_mesh = OK::make_cube(glm::vec3(heightmap.width / 2, 201, heightmap.height / 2), glm::vec3(0,100,0), true);
+    OK::Model* skybox_model = new OK::Model();
+    skybox_model->vao.bind();
+    skybox_model->renderables.emplace_back(OK::Renderable{ skybox_mesh, OK::ShaderSystem::get("skybox") });
+    skybox_model->vbo = OK::VertexBuffer(skybox_mesh.size(), skybox_mesh.vertices.data());
+    skybox_mesh.vertex_layout.applyToBuffer(skybox_model->vbo);
+    skybox_renderer->model = skybox_model;
+
+    auto v = scene->add_game_object("cloud_controller")->add_component<OK::CloudController>(cloud_buffer, glm::vec3{ 0,0,0 }, glm::vec3{ 200 , 52, 200 });
+    auto mr = v->game_object->add_component<OK::SimpleMeshRenderer>();
+    mr->model = model;
+    v->transform()->position = (glm::vec3{ 22, 9, 22 } *0.5f);
+    v->transform()->scale = (glm::vec3{ 18 , 18, 18 });
+
 
     scene->propagate_scene_graph();
+    OK::TextureSystem::get2D("sun_light_ramp").setSamplingOptions({ GL_LINEAR, GL_CLAMP_TO_EDGE });
+    OK::TextureSystem::get2D("sun_light_ramp").bind(8);
+    OK::TextureSystem::get2D("terrain_color_ramp").setSamplingOptions({ GL_LINEAR, GL_CLAMP_TO_EDGE });
+    OK::TextureSystem::get2D("terrain_color_ramp").bind(9);
+    OK::TextureSystem::get2D("Brick03_col").bind(10);
+    OK::TextureSystem::get2D("Brick03_nrm").bind(11);
+    OK::TextureSystem::get2D("Brick03_rgh").bind(12);
 
-    OK::TextureSystem::get2D("charmap").bind(0);
-    OK::TextureSystem::get2D("Brick03_col").bind(1);
-    OK::TextureSystem::get2D("Brick03_nrm").bind(2);
-    OK::TextureSystem::get2D("Brick03_rgh").bind(3);
-
-    auto& transforms = scene->get_components<OK::Transform>();
-    for (const auto& tr : transforms)
-    {
-        std::cout << tr->game_object->get_name() << "::Transform" << std::endl;
-    }
+    scene->print_scene_graph();
 
     getTimeDeltaSeconds();
-
-    std::cout << "Ready. Click to start!" << std::endl;
+    getTimeSeconds();
 }
 
-void updateFrame(GLFWwindow* window) {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-    double timeDelta = getTimeDeltaSeconds();
-
-
-    const float cameraWallOffset = 30; // Arbitrary addition to prevent ball from going too much into camera
-
-
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
-        mouseLeftPressed = true;
-        mouseLeftReleased = false;
-    } else {
-        mouseLeftReleased = mouseLeftPressed;
-        mouseLeftPressed = false;
-    }
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2)) {
-        mouseRightPressed = true;
-        mouseRightReleased = false;
-    } else {
-        mouseRightReleased = mouseRightPressed;
-        mouseRightPressed = false;
-    }
-
-    if(!hasStarted) {
-        if (mouseLeftPressed) {
-            if (options.enableMusic) {
-                sound = new sf::Sound();
-                sound->setBuffer(*buffer);
-                sf::Time startTime = sf::seconds(debug_startTime);
-                sound->setPlayingOffset(startTime);
-                sound->play();
-            }
-            totalElapsedTime = debug_startTime;
-            gameElapsedTime = debug_startTime;
-            hasStarted = true;
-        }
-
-    } else {
-        totalElapsedTime += timeDelta;
-        if(hasLost) {
-            if (mouseLeftReleased) {
-                hasLost = false;
-                hasStarted = false;
-                currentKeyFrame = 0;
-                previousKeyFrame = 0;
-            }
-        } else if (isPaused) {
-            if (mouseRightReleased) {
-                isPaused = false;
-                if (options.enableMusic) {
-                    sound->play();
-                }
-            }
-        } else {
-            gameElapsedTime += timeDelta;
-            if (mouseRightReleased) {
-                isPaused = true;
-                if (options.enableMusic) {
-                    sound->pause();
-                }
-            }
-            // Get the timing for the beat of the song
-            for (unsigned int i = currentKeyFrame; i < keyFrameTimeStamps.size(); i++) {
-                if (gameElapsedTime < keyFrameTimeStamps.at(i)) {
-                    continue;
-                }
-                currentKeyFrame = i;
-            }
-
-            jumpedToNextFrame = currentKeyFrame != previousKeyFrame;
-            previousKeyFrame = currentKeyFrame;
-
-            double frameStart = keyFrameTimeStamps.at(currentKeyFrame);
-            double frameEnd = keyFrameTimeStamps.at(currentKeyFrame + 1); // Assumes last keyframe at infinity
-
-            double elapsedTimeInFrame = gameElapsedTime - frameStart;
-            double frameDuration = frameEnd - frameStart;
-            double fractionFrameComplete = elapsedTimeInFrame / frameDuration;
-
-            double ballYCoord;
-
-            KeyFrameAction currentOrigin = keyFrameDirections.at(currentKeyFrame);
-            KeyFrameAction currentDestination = keyFrameDirections.at(currentKeyFrame + 1);
-        }
-    }
-}
-
-void renderFrame(GLFWwindow* window) {
+void run_gameloop(GLFWwindow* window) {
 
     double timeDelta = getTimeDeltaSeconds();
     //renderNode(rootNode);
@@ -328,7 +320,6 @@ void renderFrame(GLFWwindow* window) {
     scene->update(timeDelta);
     scene->render();
     scene->late_update(timeDelta);
-    
 
     // Utility for grabbing a screenshot for the various tasks
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {

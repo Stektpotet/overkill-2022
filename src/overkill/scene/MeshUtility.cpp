@@ -2,17 +2,19 @@
 
 #include "MeshUtility.hpp"
 #include <overkill/data/Mesh.hpp>
+#include <iostream>
 
 namespace OK
 {
     Mesh<> make_terrain(RawTexture16 heightmap, const glm::vec3 scale, const glm::vec3 relative_position)
     {
+        std::cout << "INFO: Generating terrain mesh from heightmap..." << std::endl;
         Mesh<OK::FullVertex, std::uint32_t> terrain_mesh;
         auto& vertices = terrain_mesh.vertices;
         vertices.resize(heightmap.width * heightmap.height);
         terrain_mesh.indices.reserve(heightmap.width * heightmap.height * 6);
 
-        auto appendVertex = [&vertices, heightmap](int index, int x, int y) {
+        auto appendVertex = [&vertices, heightmap, scale, relative_position](int index, int x, int y) {
             constexpr const int SHORT_MAX = 65536;
             auto intensity = heightmap.pixels[index];
 
@@ -42,7 +44,7 @@ namespace OK
             float yNormalized = (float(y) / heightmap.height);
 
             vertices[index] = FullVertex{
-                { xNormalized, pixelHeight, yNormalized },          //position
+                relative_position + scale * glm::vec3{ xNormalized, pixelHeight, yNormalized },          //position
                 normal,                                             //normal - //TODO - heightDiff = glm::abs(a-b);
                 { xNormalized, yNormalized },                       //uv
                 tangent,
@@ -174,12 +176,13 @@ namespace OK
         for (size_t i = 0; i < vertices.size(); i++)
         {
             mesh.vertices.emplace_back(FullVertex{
-                vertices[i], normals[i], uvs[i], tangents[i], bitangents[i], glm::u8vec4(255U,255U,255U,255U)
+                relative_position + vertices[i], normals[i], uvs[i], tangents[i], bitangents[i], glm::u8vec4(255U,255U,255U,255U)
             });
         }
         mesh.indices = indices;
         return mesh;
     }
+
     void regenerate_tbn(
         std::vector<std::uint32_t>& indices,
         std::vector<glm::vec3>& vertices,
@@ -230,6 +233,48 @@ namespace OK
             bitangents[a] = bitangent;
             bitangents[b] = bitangent;
             bitangents[c] = bitangent;
+        }
+    }
+    
+    void regenerate_tbn(
+        std::vector<std::uint32_t>& indices,
+        std::vector<FullVertex>& vertices
+    )
+    {
+        for (size_t i = 0; i < indices.size(); i += 3)
+        {
+            std::uint16_t a = indices[i];
+            std::uint16_t b = indices[i + 1];
+            std::uint16_t c = indices[i + 2];
+
+            /*
+
+                 (b)
+              d1 /
+               (a)--(c)
+                  d2
+            */
+
+            glm::vec3 d1 = vertices[b].position - vertices[a].position;
+            glm::vec3 d2 = vertices[c].position - vertices[a].position;
+
+            glm::vec2 dUV1 = vertices[b].uv - vertices[a].uv;
+            glm::vec2 dUV2 = vertices[c].uv - vertices[a].uv;
+
+            float r = 1.0f / (dUV1.x * dUV2.y - dUV1.y * dUV2.x);
+            glm::vec3 tangent = (d1 * dUV2.y - d2 * dUV1.y) * r;
+            glm::vec3 bitangent = (d2 * dUV1.x - d1 * dUV2.x) * r;
+            glm::vec3 normal = glm::normalize(glm::cross(tangent, bitangent)); // todo: verify direction
+
+            vertices[a].normal = normal;
+            vertices[b].normal = normal;
+            vertices[c].normal = normal;
+            vertices[a].tangent = tangent;
+            vertices[b].tangent = tangent;
+            vertices[c].tangent = tangent;
+            vertices[a].bitangent = bitangent;
+            vertices[b].bitangent = bitangent;
+            vertices[c].bitangent = bitangent;
         }
     }
 }

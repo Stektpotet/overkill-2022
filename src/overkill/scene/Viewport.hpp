@@ -6,9 +6,10 @@
 
 namespace OK
 {
+    class Scene;
     class Viewport
     {
-
+        friend class Scene;
         VertexArray vao;
         VertexBuffer vbo;
 

@@ -9,10 +9,9 @@ namespace OK
 {
     struct Rotator : public Component
     {
-        float time_rate = 500;
-        // Set to Gjøvik latitude
-        glm::vec3 rotation_axis = glm::vec3(0.0f, glm::sin(glm::radians(60.8f)), glm::cos(glm::radians(60.8f)));
-
+        float time_rate = 0.2;
+        glm::vec3 rotation_axis = glm::vec3(0.0f, glm::sin(glm::radians(63.4f)), glm::cos(glm::radians(63.4f)));
+        void on_created() override;
         void update(float dt) override;
     };
 }

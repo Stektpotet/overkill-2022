@@ -22,5 +22,6 @@ OK::RawTexture8 loadPNGFile(std::string fileName)
 
 void savePNGFile(std::string fileName, OK::RawTexture8 img)
 {
+    stbi_flip_vertically_on_write(true);
     stbi_write_png(fileName.data(), img.width, img.height, 4, img.pixels, img.width * 4);
 }

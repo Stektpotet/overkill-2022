@@ -23,8 +23,11 @@ namespace OK
         viewport_shader->bind();
         TextureSystem::get2D("__RTEX_COLOR__").bind(0);
         TextureSystem::get2D("__RTEX_DEPTH__").bind(1);
+        //OK::TextureSystem::get3D("worley").bind(3);
         glUniform1i(viewport_shader->getUniformLocation("_color"), 0);
         glUniform1i(viewport_shader->getUniformLocation("_depth"), 1);
+        //glUniform1i(viewport_shader->getUniformLocation("worley"), 3);
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
 }
+

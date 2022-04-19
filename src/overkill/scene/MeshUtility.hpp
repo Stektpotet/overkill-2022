@@ -10,7 +10,11 @@ namespace OK
 {
     Mesh<> make_terrain(RawTexture16 heightmap, const glm::vec3 scale = glm::vec3{ 1 }, const glm::vec3 relative_position = glm::vec3{ 0 });
     Mesh<> make_cube(const glm::vec3 scale = glm::vec3{ 1 }, const glm::vec3 relative_position = glm::vec3{ 0 }, const bool invert = false);
-
+    
+    void regenerate_tbn(
+        std::vector<std::uint32_t>& indices,
+        std::vector<FullVertex>& vertices
+    );
     void regenerate_tbn(
         std::vector<std::uint32_t>& indices,
         std::vector<glm::vec3>& vertices,

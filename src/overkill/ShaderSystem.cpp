@@ -45,7 +45,19 @@ namespace OK
         auto element = shaders.find(name);
         if (element != shaders.end())
             return element->second;
+        std::cout << "WARN: Unable to find shader \"" << name << "\" registered in shadersystem, loading default shader instead...";
         element = shaders.find(OK::ShaderSystem::DEFAULT);
+        assert(element != shaders.end() && "Default shader doesnt exist!");
+        return element->second; // TODO: Return default/error shader
+    }
+
+    ShaderProgram* const ShaderSystem::get_compute(const char* name)
+    {
+        auto element = computeShaders.find(name);
+        if (element != computeShaders.end())
+            return element->second;
+        std::cout << "WARN: Unable to find shader \"" << name << "\" registered in shadersystem, loading default shader instead...";
+        element = computeShaders.find(OK::ShaderSystem::DEFAULT);
         assert(element != shaders.end() && "Default shader doesnt exist!");
         return element->second; // TODO: Return default/error shader
     }
@@ -54,7 +66,21 @@ namespace OK
     {
         return uniformBuffers[name];
     }
-    
+
+    ShaderProgram* const ShaderSystem::push_compute(const char* name) {
+        return push_compute(name, name);
+    }
+    ShaderProgram* const ShaderSystem::push_compute(const char* name, const char* src)
+    {
+        UnlinkedShaderProgram unlinked = UnlinkedShaderProgram();
+        std::string source_code;
+        if (files.getSrc(src, GL_COMPUTE_SHADER, &source_code))
+            unlinked.attachShader(source_code, GL_COMPUTE_SHADER);
+        glLinkProgram(unlinked.id);
+        ShaderIntrospector::checkLinkStatus(unlinked.id);
+        computeShaders.emplace(name, new ShaderProgram(unlinked));
+        return computeShaders[name];
+    }
     ShaderProgram* const ShaderSystem::push(const char* name, const std::initializer_list<std::pair<GLenum, const char*>> src)
     {
         UnlinkedShaderProgram unlinked = UnlinkedShaderProgram();
@@ -68,23 +94,27 @@ namespace OK
         }
     
         glLinkProgram(unlinked.id);
-        ShaderIntrospector::checkLinkStatus(unlinked.id);
+        if (ShaderIntrospector::checkLinkStatus(unlinked.id))
+            std::cout << "ERR: Failed linking \"" << name << "\"" << std::endl;
         shaders.emplace(name, new ShaderProgram(unlinked));
         return shaders[name];
     }
     
     void ShaderSystem::bindUniformBlocks()
     {
+        GLuint bindPoint = 0;
         for (const auto& [uniform_buffer_name, ubo] : uniformBuffers)
         {
             for (const auto& [shader_name, shader] : shaders) {
                 auto uBlockIndex = OK::ShaderIntrospector::getUniformBlockIndex(shader->ID(), uniform_buffer_name);
                 if (uBlockIndex != GL_INVALID_INDEX) // As long as the block exists in the shader
                 {
-                    glUniformBlockBinding(shader->ID(), uBlockIndex, 0);  //link blocks of the same type to the same binding point
-                    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo->get()); //reserve data range on the uniform buffer
+                    std::cout << "INFO: Binding UBO[" << uBlockIndex << "] and shader [" << shader->ID() << "] in binding point "<< bindPoint << std::endl;
+                    glUniformBlockBinding(shader->ID(), uBlockIndex, bindPoint);  //link blocks of the same type to the same binding point
+                    glBindBufferBase(GL_UNIFORM_BUFFER, bindPoint, ubo->get()); //reserve data range on the uniform buffer
                 }
             }
+            bindPoint++;
         }
     }
 

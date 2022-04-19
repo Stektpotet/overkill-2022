@@ -22,8 +22,5 @@ namespace OK
             }
             return { sub, base };
         }
-
-    protected:
-        inline LightSource() : Component() {};
     };
 }

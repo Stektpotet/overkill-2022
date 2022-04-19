@@ -1,0 +1,92 @@
+#version 430 core
+// ON NVIDIA CARD -> so we strive for a warp size of 32
+layout(local_size_x = 1, local_size_y = 1) in;
+
+layout(std430, binding = 0) buffer OK_Voronoi
+{
+    vec3 voronoiPoints[10*10*10];
+};
+layout(r32f, binding = 1) uniform image3D img_output;
+
+uniform layout(location = 2) vec3 resolution;
+uniform layout(location = 3) int cells_per_axis;
+
+
+ivec3 wrapDirection(int p)
+{
+    return ivec3((p + 1) % cells_per_axis, p, ((p - 1) < 0) ? cells_per_axis - 1 : p - 1);
+}
+
+vec3 worley(in vec3 uvw)
+{
+    ivec3 cell = ivec3(floor(uvw * cells_per_axis));
+    vec3 c_uvw = fract(uvw * cells_per_axis);
+    
+//    // Make the texture wrap around by sampling points from the "neighbours" on the opposite side
+    ivec3 xDir = wrapDirection(cell.x);
+    ivec3 yDir = wrapDirection(cell.y) * cells_per_axis;
+    ivec3 zDir = wrapDirection(cell.z) * cells_per_axis * cells_per_axis;
+//
+    vec3 virtualPoints[26] = {
+        fract(voronoiPoints[xDir.z + yDir.z + zDir.z].xyz * cells_per_axis) + vec3(-1, -1, -1),
+        fract(voronoiPoints[xDir.y + yDir.z + zDir.z].xyz * cells_per_axis) + vec3( 0, -1, -1),
+        fract(voronoiPoints[xDir.x + yDir.z + zDir.z].xyz * cells_per_axis) + vec3( 1, -1, -1),
+
+        fract(voronoiPoints[xDir.z + yDir.y + zDir.z].xyz * cells_per_axis) + vec3(-1, 0, -1),
+        fract(voronoiPoints[xDir.y + yDir.y + zDir.z].xyz * cells_per_axis) + vec3( 0, 0, -1),
+        fract(voronoiPoints[xDir.x + yDir.y + zDir.z].xyz * cells_per_axis) + vec3( 1, 0, -1),
+
+        fract(voronoiPoints[xDir.z + yDir.x + zDir.z].xyz * cells_per_axis) + vec3(-1, 1, -1),
+        fract(voronoiPoints[xDir.y + yDir.x + zDir.z].xyz * cells_per_axis) + vec3( 0, 1, -1),
+        fract(voronoiPoints[xDir.x + yDir.x + zDir.z].xyz * cells_per_axis) + vec3( 1, 1, -1),
+
+
+        fract(voronoiPoints[xDir.z + yDir.z + zDir.y].xyz * cells_per_axis) + vec3(-1, -1, 0),
+        fract(voronoiPoints[xDir.y + yDir.z + zDir.y].xyz * cells_per_axis) + vec3( 0, -1, 0),
+        fract(voronoiPoints[xDir.x + yDir.z + zDir.y].xyz * cells_per_axis) + vec3( 1, -1, 0),
+
+        fract(voronoiPoints[xDir.z + yDir.y + zDir.y].xyz * cells_per_axis) + vec3(-1, 0, 0),
+        //fract(voronoiPoints[xDir.y + yDir.y + zDir.y] * cells_per_axis),
+        fract(voronoiPoints[xDir.x + yDir.y + zDir.y].xyz * cells_per_axis) + vec3( 1, 0, 0),
+
+        fract(voronoiPoints[xDir.z + yDir.x + zDir.y].xyz * cells_per_axis) + vec3(-1, 1, 0),
+        fract(voronoiPoints[xDir.y + yDir.x + zDir.y].xyz * cells_per_axis) + vec3( 0, 1, 0),
+        fract(voronoiPoints[xDir.x + yDir.x + zDir.y].xyz * cells_per_axis) + vec3( 1, 1, 0),
+
+
+        fract(voronoiPoints[xDir.z + yDir.z + zDir.x].xyz * cells_per_axis) + vec3(-1, -1, 1),
+        fract(voronoiPoints[xDir.y + yDir.z + zDir.x].xyz * cells_per_axis) + vec3( 0, -1, 1),
+        fract(voronoiPoints[xDir.x + yDir.z + zDir.x].xyz * cells_per_axis) + vec3( 1, -1, 1),
+
+        fract(voronoiPoints[xDir.z + yDir.y + zDir.x].xyz * cells_per_axis) + vec3(-1, 0, 1),
+        fract(voronoiPoints[xDir.y + yDir.y + zDir.x].xyz * cells_per_axis) + vec3( 0, 0, 1),
+        fract(voronoiPoints[xDir.x + yDir.y + zDir.x].xyz * cells_per_axis) + vec3( 1, 0, 1),
+
+        fract(voronoiPoints[xDir.z + yDir.x + zDir.x].xyz * cells_per_axis) + vec3(-1, 1, 1),
+        fract(voronoiPoints[xDir.y + yDir.x + zDir.x].xyz * cells_per_axis) + vec3( 0, 1, 1),
+        fract(voronoiPoints[xDir.x + yDir.x + zDir.x].xyz * cells_per_axis) + vec3( 1, 1, 1),
+    };
+    
+    vec3 closest = fract(voronoiPoints[xDir.y + yDir.y + zDir.y].xyz * cells_per_axis) - c_uvw;
+    for (uint i = 0; i < 26; i++)
+    {
+        vec3 v = virtualPoints[i].xyz - c_uvw;
+        if (dot(v, v) < dot(closest, closest)) //dot is faster than distance because of sqrt
+            closest = v;
+    }
+
+    return closest;
+}
+
+void main() {
+    // base pixel colour for image
+    // get index in global work group i.e x,y position
+    ivec3 id = ivec3(gl_GlobalInvocationID.xyz);
+    vec3 uvw = id / resolution;
+  
+    vec3 closest = worley(uvw);
+
+    vec3 c = 1 - sqrt(dot(closest, closest)).xxx;
+
+    imageStore(img_output, id, vec4(c, 1.0));
+}

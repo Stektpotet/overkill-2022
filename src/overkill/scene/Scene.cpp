@@ -7,6 +7,7 @@
 #include <glm/gtc/quaternion.hpp>
 
 #include <iostream>
+#include <utilities/timeutils.h>
 
 namespace OK
 {
@@ -81,14 +82,13 @@ namespace OK
         for (const auto& light_component : light_sources->registered_components) 
         {
             auto packed = OK::pack_data(
-                glm::vec4{ light_component->light.intensities, 1 },
-                glm::vec4{ glm::eulerAngles(light_component->transform()->rotation), 1 }
+                glm::vec4{ light_component->transform()->rotation * glm::vec3{1, 0, 0}, 1 },
+                glm::vec4{ light_component->light.intensities, 1 }
             );
             switch (light_component->light_type)
             {
             case LightSource::Type::DIRECTIONAL:;
-                
-                light_buffer->update(sizeof(packed), &packed);
+                light_buffer->update(0, sizeof(packed), &packed);
                 break;
             default:
                 std::cout << "Light source type not implemented!" << std::endl;
@@ -105,7 +105,6 @@ namespace OK
             main_framebuffer->unbind();
             viewport.render();
         }
-        
     }
 
     void Scene::update(float dt)
@@ -120,6 +119,7 @@ namespace OK
     }
     void Scene::late_update(float dt)
     {
+        camera->move(dt);
         for (auto& go : objects)
         {
             for (auto& comp : go->components)
@@ -127,10 +127,15 @@ namespace OK
                 comp->late_update(dt);
             }
         }
-
+        float time = getTimeSeconds();
         auto packed_matrices = OK::pack_data(
             camera->projection_matrix,
-            camera->view_matrix
+            camera->view_matrix,
+            camera->view_projection_matrix(),
+            camera->view_projection_inverse_matrix(),
+            glm::vec4(-camera->transform()->forward(), 1),
+            glm::vec4(camera->near_clip, camera->far_clip, camera->field_of_view, camera->aspect_ratio),
+            glm::vec4{ time, time * 2, time * 3, time * 0.05f }
         );
 
         shared_matrices_buffer->update(sizeof(packed_matrices), &packed_matrices);
@@ -140,14 +145,35 @@ namespace OK
     {
         transform->trs = parent_trs * (
             glm::translate(transform->position) * 
-            glm::rotate(transform->rotation.y, glm::vec3(0, 1, 0)) * 
-            glm::rotate(transform->rotation.x, glm::vec3(1, 0, 0)) * 
-            glm::rotate(transform->rotation.z, glm::vec3(0, 0, 1)) * 
+            glm::mat4(transform->rotation) *
             glm::scale(transform->scale)
         );
         for (auto& child : transform->children)
         {
             propagate_trs(child, transform->trs);
+        }
+    }
+    void Scene::set_viewport_shader(ShaderProgram* program)
+    {
+        viewport.viewport_shader = program;
+    }
+    void Scene::print_scene_graph() const
+    {
+        std::cout << "============================ [SCENE TREE] ============================" << std::endl;
+        std::cout << name << " [ROOT]" << std::endl;
+        for (const auto& child : scene_graph->children)
+        {
+            print_scene_graph_internal(child, 1);
+        }
+        std::cout << "========================== [END SCENE TREE] ==========================" << std::endl;
+    }
+    void Scene::print_scene_graph_internal(Transform* transform, int indent) const
+    {
+        printf("%*s", indent * 2, ""); 
+        std::cout << transform->game_object->name << std::endl;
+        for (const auto& child : transform->children)
+        {
+            print_scene_graph_internal(child, indent+1);
         }
     }
 

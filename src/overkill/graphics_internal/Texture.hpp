@@ -3,170 +3,6 @@
 #include <glad/glad.h>
 #include <stdint.h>
 
-
-inline const char* GLEnumToString(GLenum e)
-{
-#define GFX_TO_STRING_GENERATOR(x) case x: return #x; break;
-    switch (e)
-    {
-        // shader:
-        GFX_TO_STRING_GENERATOR(GL_VERTEX_SHADER);
-        GFX_TO_STRING_GENERATOR(GL_GEOMETRY_SHADER);
-        GFX_TO_STRING_GENERATOR(GL_FRAGMENT_SHADER);
-
-        // buffer usage:
-        GFX_TO_STRING_GENERATOR(GL_STREAM_DRAW);
-        GFX_TO_STRING_GENERATOR(GL_STREAM_READ);
-        GFX_TO_STRING_GENERATOR(GL_STREAM_COPY);
-        GFX_TO_STRING_GENERATOR(GL_STATIC_DRAW);
-        GFX_TO_STRING_GENERATOR(GL_STATIC_READ);
-        GFX_TO_STRING_GENERATOR(GL_STATIC_COPY);
-        GFX_TO_STRING_GENERATOR(GL_DYNAMIC_DRAW);
-        GFX_TO_STRING_GENERATOR(GL_DYNAMIC_READ);
-        GFX_TO_STRING_GENERATOR(GL_DYNAMIC_COPY);
-
-        // errors:
-        GFX_TO_STRING_GENERATOR(GL_NO_ERROR);
-        GFX_TO_STRING_GENERATOR(GL_INVALID_ENUM);
-        GFX_TO_STRING_GENERATOR(GL_INVALID_VALUE);
-        GFX_TO_STRING_GENERATOR(GL_INVALID_OPERATION);
-        GFX_TO_STRING_GENERATOR(GL_INVALID_FRAMEBUFFER_OPERATION);
-        GFX_TO_STRING_GENERATOR(GL_OUT_OF_MEMORY);
-        GFX_TO_STRING_GENERATOR(GL_STACK_UNDERFLOW);
-        GFX_TO_STRING_GENERATOR(GL_STACK_OVERFLOW);
-
-        // types:
-        GFX_TO_STRING_GENERATOR(GL_BYTE);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_BYTE);
-        GFX_TO_STRING_GENERATOR(GL_SHORT);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_SHORT);
-        GFX_TO_STRING_GENERATOR(GL_FLOAT);
-        GFX_TO_STRING_GENERATOR(GL_FLOAT_VEC2);
-        GFX_TO_STRING_GENERATOR(GL_FLOAT_VEC3);
-        GFX_TO_STRING_GENERATOR(GL_FLOAT_VEC4);
-        GFX_TO_STRING_GENERATOR(GL_DOUBLE);
-        GFX_TO_STRING_GENERATOR(GL_DOUBLE_VEC2);
-        GFX_TO_STRING_GENERATOR(GL_DOUBLE_VEC3);
-        GFX_TO_STRING_GENERATOR(GL_DOUBLE_VEC4);
-        GFX_TO_STRING_GENERATOR(GL_INT);
-        GFX_TO_STRING_GENERATOR(GL_INT_VEC2);
-        GFX_TO_STRING_GENERATOR(GL_INT_VEC3);
-        GFX_TO_STRING_GENERATOR(GL_INT_VEC4);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_VEC2);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_VEC3);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_VEC4);
-        GFX_TO_STRING_GENERATOR(GL_BOOL);
-        GFX_TO_STRING_GENERATOR(GL_BOOL_VEC2);
-        GFX_TO_STRING_GENERATOR(GL_BOOL_VEC3);
-        GFX_TO_STRING_GENERATOR(GL_BOOL_VEC4);
-        GFX_TO_STRING_GENERATOR(GL_FLOAT_MAT2);
-        GFX_TO_STRING_GENERATOR(GL_FLOAT_MAT3);
-        GFX_TO_STRING_GENERATOR(GL_FLOAT_MAT4);
-        GFX_TO_STRING_GENERATOR(GL_FLOAT_MAT2x3);
-        GFX_TO_STRING_GENERATOR(GL_FLOAT_MAT2x4);
-        GFX_TO_STRING_GENERATOR(GL_FLOAT_MAT3x2);
-        GFX_TO_STRING_GENERATOR(GL_FLOAT_MAT3x4);
-        GFX_TO_STRING_GENERATOR(GL_FLOAT_MAT4x2);
-        GFX_TO_STRING_GENERATOR(GL_FLOAT_MAT4x3);
-        GFX_TO_STRING_GENERATOR(GL_DOUBLE_MAT2);
-        GFX_TO_STRING_GENERATOR(GL_DOUBLE_MAT3);
-        GFX_TO_STRING_GENERATOR(GL_DOUBLE_MAT4);
-        GFX_TO_STRING_GENERATOR(GL_DOUBLE_MAT2x3);
-        GFX_TO_STRING_GENERATOR(GL_DOUBLE_MAT2x4);
-        GFX_TO_STRING_GENERATOR(GL_DOUBLE_MAT3x2);
-        GFX_TO_STRING_GENERATOR(GL_DOUBLE_MAT3x4);
-        GFX_TO_STRING_GENERATOR(GL_DOUBLE_MAT4x2);
-        GFX_TO_STRING_GENERATOR(GL_DOUBLE_MAT4x3);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_1D);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_2D);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_3D);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_CUBE);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_1D_SHADOW);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_2D_SHADOW);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_1D_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_2D_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_1D_ARRAY_SHADOW);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_2D_ARRAY_SHADOW);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_2D_MULTISAMPLE);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_2D_MULTISAMPLE_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_CUBE_SHADOW);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_BUFFER);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_2D_RECT);
-        GFX_TO_STRING_GENERATOR(GL_SAMPLER_2D_RECT_SHADOW);
-        GFX_TO_STRING_GENERATOR(GL_INT_SAMPLER_1D);
-        GFX_TO_STRING_GENERATOR(GL_INT_SAMPLER_2D);
-        GFX_TO_STRING_GENERATOR(GL_INT_SAMPLER_3D);
-        GFX_TO_STRING_GENERATOR(GL_INT_SAMPLER_CUBE);
-        GFX_TO_STRING_GENERATOR(GL_INT_SAMPLER_1D_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_INT_SAMPLER_2D_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_INT_SAMPLER_2D_MULTISAMPLE);
-        GFX_TO_STRING_GENERATOR(GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_INT_SAMPLER_BUFFER);
-        GFX_TO_STRING_GENERATOR(GL_INT_SAMPLER_2D_RECT);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_SAMPLER_1D);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_SAMPLER_2D);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_SAMPLER_3D);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_SAMPLER_CUBE);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_SAMPLER_1D_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_SAMPLER_2D_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_SAMPLER_BUFFER);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_SAMPLER_2D_RECT);
-        GFX_TO_STRING_GENERATOR(GL_IMAGE_1D);
-        GFX_TO_STRING_GENERATOR(GL_IMAGE_2D);
-        GFX_TO_STRING_GENERATOR(GL_IMAGE_3D);
-        GFX_TO_STRING_GENERATOR(GL_IMAGE_2D_RECT);
-        GFX_TO_STRING_GENERATOR(GL_IMAGE_CUBE);
-        GFX_TO_STRING_GENERATOR(GL_IMAGE_BUFFER);
-        GFX_TO_STRING_GENERATOR(GL_IMAGE_1D_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_IMAGE_2D_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_IMAGE_2D_MULTISAMPLE);
-        GFX_TO_STRING_GENERATOR(GL_IMAGE_2D_MULTISAMPLE_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_INT_IMAGE_1D);
-        GFX_TO_STRING_GENERATOR(GL_INT_IMAGE_2D);
-        GFX_TO_STRING_GENERATOR(GL_INT_IMAGE_3D);
-        GFX_TO_STRING_GENERATOR(GL_INT_IMAGE_2D_RECT);
-        GFX_TO_STRING_GENERATOR(GL_INT_IMAGE_CUBE);
-        GFX_TO_STRING_GENERATOR(GL_INT_IMAGE_BUFFER);
-        GFX_TO_STRING_GENERATOR(GL_INT_IMAGE_1D_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_INT_IMAGE_2D_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_INT_IMAGE_2D_MULTISAMPLE);
-        GFX_TO_STRING_GENERATOR(GL_INT_IMAGE_2D_MULTISAMPLE_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_IMAGE_1D);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_IMAGE_2D);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_IMAGE_3D);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_IMAGE_2D_RECT);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_IMAGE_CUBE);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_IMAGE_BUFFER);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_IMAGE_1D_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_IMAGE_2D_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY);
-        GFX_TO_STRING_GENERATOR(GL_UNSIGNED_INT_ATOMIC_COUNTER);
-    }
-
-    static char buffer[32];
-    std::sprintf(buffer, "Unknown GLenum: (0x%04x)", e);
-    return buffer;
-
-#undef GFX_TO_STRING_GENERATOR
-}
-
-#define GL_CALL(glfunc)                                                                                                                                             \
-{                                                                                                                                                                       \
-    while (glGetError() != GL_NO_ERROR) {}                                                                                                                              \
-    glfunc;                                                                                                                                                             \
-    while (GLenum errc = glGetError())                                                                                                                                  \
-    {                                                                                                                                                                   \
-        std::printf("(0x%04x): %s", errc, GLEnumToString(errc));        \
-        std::exit(EXIT_FAILURE);                                                                                                                             \
-    }                                                                                                                                                                   \
-}
-
-
-
 namespace OK
 {
     //TODO: Cleanup, don't inline everything
@@ -205,7 +41,8 @@ namespace OK
             maxFilter = GL_LINEAR;
         GLenum
             sWrap = GL_REPEAT,
-            tWrap = GL_REPEAT;
+            tWrap = GL_REPEAT,
+            rWrap = GL_REPEAT;
 
         TextureSamplingOptions() = default;
         TextureSamplingOptions(
@@ -213,19 +50,48 @@ namespace OK
         ) : minFilter{ filterMode },
             maxFilter{ filterMode },
             sWrap{ wrapMode },
-            tWrap{ wrapMode }
+            tWrap{ wrapMode },
+            rWrap{ wrapMode }
         {}
 
         TextureSamplingOptions(
             GLenum minFilterMode,
             GLenum maxFilterMode,
             GLenum sWrapMode,
-            GLenum tWrapMode
+            GLenum tWrapMode,
+            GLenum rWrapMode
         ) : minFilter{ minFilterMode },
             maxFilter{ maxFilterMode },
             sWrap{ sWrapMode },
-            tWrap{ tWrapMode }
+            tWrap{ tWrapMode },
+            rWrap{ rWrapMode }
         {}
+    };
+
+    class Texture3D
+    {
+    protected:
+        GLuint id;
+        uint16_t width, height, depth, channels;
+        TextureSamplingOptions samplingOptions;
+    public:
+        Texture3D() = default;
+        Texture3D(uint16_t width, uint16_t height, uint16_t depth, uint16_t channels, TextureSamplingOptions options = TextureSamplingOptions());
+        // DO NOT PUT THIS IN A DESTRUCTOR, we don't want to clean everytime a texture falls out of scope, the texture may be intended to remain on GPU
+        inline void clean() { glDeleteTextures(1, &id); }
+
+        inline const bool valid() const { return id != 0; }
+        inline const GLuint getID() const { return id; }
+
+        inline const uint16_t  getWidth() const     { return width; }
+        inline const uint16_t  getHeight() const    { return height; }
+        inline const uint16_t  getDepth() const     { return depth; }
+        inline const uint16_t  getChannels() const  { return channels; }
+
+        void bind(GLuint slot = 0) const;
+
+        void unbind() const;
+        void setSamplingOptions(TextureSamplingOptions options);
     };
 
     class TextureBase 
@@ -253,7 +119,7 @@ namespace OK
         virtual void bind(GLuint slot = 0) const = 0; 
 
         virtual void unbind() const = 0;
-        virtual void setSamplingOptions(TextureSamplingOptions options) = 0;
+        virtual void setSamplingOptions(TextureSamplingOptions options) const = 0;
         virtual RawTexture8 fetchRaw() const = 0;
     };
 
@@ -309,7 +175,7 @@ namespace OK
             glBindTexture(TextureType, 0);
         }
 
-        inline void setSamplingOptions(TextureSamplingOptions options) override
+        inline void setSamplingOptions(TextureSamplingOptions options) const override
         {
             glBindTexture(TextureType, id);
 

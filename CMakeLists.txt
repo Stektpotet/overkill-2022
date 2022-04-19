@@ -1,5 +1,5 @@
 
-project (glowbox)
+project (overkill)
 
 #
 # Specify minimum CMake version and project name
