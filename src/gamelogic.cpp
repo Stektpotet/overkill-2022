@@ -53,9 +53,6 @@ enum KeyFrameAction {
 #include <program.hpp>
 #include <overkill/scene/Components/CloudController.hpp>
 
-double padPositionX = 0;
-double padPositionZ = 0;
-
 unsigned int currentKeyFrame = 0;
 unsigned int previousKeyFrame = 0;
 
@@ -71,7 +68,6 @@ OK::UniformBuffer* matrix_buffer;
 OK::RenderSystem renderSystem;
 OK::Scene* scene;
 
-double ballRadius = 3.0f;
 
 const int NUM_LIGHTS = 3;
 #define MAX_LIGHTS 16 // FOR NOW WE LEAVE IT AS A DEFINE. IDEALLY, WE INJECT THIS DEFINE INTO THE SHADERS UPON READING THEM IN
@@ -88,7 +84,6 @@ OK::Texture2D brickwall[3];
 //
 //glm::vec3 ballPosition(0, ballRadius + padDimensions.y, boxDimensions.z / 2);
 //glm::vec3 ballDirection(1, 1, 0.2f);
-glm::mat4 viewProjection;
 
 CommandLineOptions options;
 
@@ -111,16 +106,18 @@ double mouseSensitivity = 1.0;
 double lastMouseX = WINDOW_WIDTH / 2;
 double lastMouseY = WINDOW_HEIGHT / 2;
 
+struct compute_debug_t {
+    //glm::ivec4 neighbourhood[27];
+    //glm::ivec4 neighbourhood_scaled[27];
+    int neighbourhood_idx[27];
+    int pad;
 
-//void mouseCallback(GLFWwindow* window, double x, double y) {
-//    double deltaX = x - lastMouseX;
-//    double deltaY = y - lastMouseY;
-//
-//    glfwSetCursorPos(window, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
-//}
-
-PointLight lights[NUM_LIGHTS];
-
+    glm::vec4 relation[27];
+    glm::vec4 closest;
+    glm::vec4 virtual_points[27];
+    glm::vec4 voronoi[27];
+    glm::vec4 cell_pos;
+};
 
 
 void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
@@ -153,6 +150,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     //TODO: have the defualt shaders be pushed into the system by default
     OK::ShaderSystem::push(OK::ShaderSystem::DEFAULT, { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "simple"} });
     OK::ShaderSystem::push(OK::ShaderSystem::VIEWPORT_DEFAULT, { {GL_VERTEX_SHADER, "viewport"}, {GL_FRAGMENT_SHADER, "viewport"} });
+    OK::ShaderSystem::push("vignette", { {GL_VERTEX_SHADER, "viewport"}, {GL_FRAGMENT_SHADER, "vignette"} });
     OK::ShaderSystem::push("clouds", { {GL_VERTEX_SHADER, "viewport"}, {GL_FRAGMENT_SHADER, "clouds"} });
     OK::ShaderSystem::push("UI", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "text"} });
     OK::ShaderSystem::push("terrain", { {GL_VERTEX_SHADER, "simple"}, {GL_FRAGMENT_SHADER, "terrain"} });
@@ -177,9 +175,25 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
         ),
         MAX_LIGHTS
     );
+    OK::BlockLayout matrices("OK_Commons", {
+        {"projection", 64},
+        {"view", 64},
+        {"view_projection", 64},
+        {"projection_inv", 64},
+        {"view_inv", 64},
+        {"projection_inv", 64},
+        {"view_projection_inv", 64},
+        {"projection_params", 16}, // x: near plane, y: far plane
+        {"zbuffer_params", 16}, // x: near plane, y: far plane
+        {"camera_position", 16},
+        {"camera_direction", 16},
+        {"time", 16},
+    });
+
+
 
     light_buffer = OK::ShaderSystem::makeUniformBuffer<GL_DYNAMIC_DRAW>(lightBufferLayout);
-    matrix_buffer = OK::ShaderSystem::makeUniformBuffer<GL_DYNAMIC_DRAW>("OK_Commons", { { "projection", 64 }, { "view", 64 },  { "view_projection", 64 }, { "view_projection_inv", 64 },{"cam_direction", 16}, {"cam_settings", 16}, {"time", 16} });
+    matrix_buffer = OK::ShaderSystem::makeUniformBuffer<GL_DYNAMIC_DRAW>(matrices);
     auto cloud_buffer = OK::ShaderSystem::makeUniformBuffer<GL_STATIC_DRAW>("OK_Clouds", { { "bounds_min", 16 }, { "bounds_max", 16 } });
     OK::ShaderSystem::bindUniformBlocks();
 
@@ -194,29 +208,33 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     mainFrameBuffer->unbind();
 
 
-
     // =================  3D Worley Noise Generation  ==================
 
-    int tex_w = 500, tex_h = 500, tex_d = 120;
-    auto worley_texture = OK::Texture3D(tex_w, tex_h, tex_d, 1, { GL_LINEAR, GL_REPEAT });
+    constexpr glm::ivec3 tex_res = { 256, 256, 256 };
+    auto worley_texture = OK::Texture3D(tex_res.x, tex_res.y, tex_res.z, 1);
     OK::TextureSystem::push3D("worley", worley_texture);    
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_R32F, tex_w, tex_h, tex_d, 0, GL_RGBA, GL_FLOAT, nullptr);
-    glBindImageTexture(1, worley_texture.getID(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, tex_res.x, tex_res.y, tex_res.z, 0, GL_RGBA, GL_FLOAT, nullptr);
+    glBindImageTexture(2, worley_texture.getID(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
     
     // Generate 1000 points inside of the 3d volume
-    const int cells_per_axis = 10;
-    glm::vec3 rand_points[cells_per_axis * cells_per_axis * cells_per_axis];
+    constexpr glm::ivec3 cells_per_axis = { 16, 16, 16 };
+    constexpr size_t num_rand_points = static_cast<size_t>(cells_per_axis.x) * cells_per_axis.y * cells_per_axis.z;
+    glm::vec4* rand_points = static_cast<glm::vec4*>(calloc(num_rand_points, sizeof(glm::vec4)));
 
-    float cell_size = 1.0f / cells_per_axis;
+    glm::vec3 cell_size = glm::vec3(tex_res) / glm::vec3(cells_per_axis);
 
-    for (size_t z = 0; z < cells_per_axis; z++)
+    for (size_t z = 0; z < cells_per_axis.z; z++)
     {
-        for (size_t y = 0; y < cells_per_axis; y++)
+        for (size_t y = 0; y < cells_per_axis.y; y++)
         {
-            for (size_t x = 0; x < cells_per_axis; x++)
+            for (size_t x = 0; x < cells_per_axis.x; x++)
             {
-                rand_points[x + y * cells_per_axis + z * cells_per_axis * cells_per_axis] 
-                    = glm::linearRand(glm::vec3(x, y, z), glm::vec3(x + cell_size, y + cell_size, z + cell_size));
+                // rand points in cell space (c_uvw)
+                // slices = cells_per_axis.x * cells_per_axis.y;
+                // rows = cells_per_axis.x;
+
+                rand_points[x + y * cells_per_axis.x + z * cells_per_axis.x * cells_per_axis.y] 
+                    = glm::vec4(glm::linearRand(glm::vec3(0), glm::vec3(1)), 0);
             }
         }
     }
@@ -225,27 +243,35 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     GLuint ssbo;
     glGenBuffers(1, &ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(rand_points), rand_points, GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(glm::vec4) * num_rand_points, rand_points, GL_STATIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo); //set binding point to 0
     //glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); //unbind
+    //GLuint debug_buffer;
+    //// Buffer with one integer slot per kernel for debugging purposes
+    //glGenBuffers(1, &debug_buffer);
+    //glBindBuffer(GL_SHADER_STORAGE_BUFFER, debug_buffer);
+    //glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(compute_debug_t) * tex_res.x * tex_res.y * tex_res.z, nullptr, GL_STATIC_READ);
+    //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, debug_buffer); //set binding point to 0
+    ////glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); //unbind
 
 
     worley3d->bind();
-    glUniform3f(worley3d->getUniformLocation("resolution"), tex_w, tex_h, tex_d);
-    glUniform1i(worley3d->getUniformLocation("cells_per_axis"), cells_per_axis);
-    glDispatchCompute((GLuint)tex_w, (GLuint)tex_h, (GLuint)tex_d);
+    glUniform3i(worley3d->getUniformLocation("resolution"), tex_res.x, tex_res.y, tex_res.z);
+    glUniform3i(worley3d->getUniformLocation("cells_per_axis"), cells_per_axis.x, cells_per_axis.y, cells_per_axis.z);
+    glDispatchCompute((GLuint)tex_res.x, (GLuint)tex_res.y, (GLuint)tex_res.z);
     glBindTextureUnit(0, worley_texture.getID());
     // make sure writing to image has finished before read
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
 
+    free(rand_points);
 
     // ========================== Scene construction ==========================
 
     scene = new OK::Scene("Test Scene");
     scene->main_framebuffer = mainFrameBuffer;
     
-    //scene->set_viewport_shader(OK::ShaderSystem::get("clouds")); // Disabled as 
-    scene->active_camera()->transform()->position = { 0, 20, -100 };
+    scene->set_viewport_shader(OK::ShaderSystem::get("clouds")); 
+    //scene->active_camera()->transform()->position = { 0, 20, -100 };
 
     //auto game_object =  scene->add_game_object("helloworld");
 
@@ -290,7 +316,7 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
     skybox_mesh.vertex_layout.applyToBuffer(skybox_model->vbo);
     skybox_renderer->model = skybox_model;
 
-    auto v = scene->add_game_object("cloud_controller")->add_component<OK::CloudController>(cloud_buffer, glm::vec3{ 0,0,0 }, glm::vec3{ 200 , 52, 200 });
+    auto v = scene->add_game_object("cloud_controller")->add_component<OK::CloudController>(cloud_buffer, glm::vec3{ -heightmap.width / 4, 40 ,-heightmap.height / 4 }, glm::vec3{ heightmap.width / 4, 200, heightmap.height / 4 });
     auto mr = v->game_object->add_component<OK::SimpleMeshRenderer>();
     mr->model = model;
     v->transform()->position = (glm::vec3{ 22, 9, 22 } *0.5f);
@@ -315,14 +341,13 @@ void initGame(GLFWwindow* window, CommandLineOptions gameOptions) {
 void run_gameloop(GLFWwindow* window) {
 
     double timeDelta = getTimeDeltaSeconds();
-    //renderNode(rootNode);
-    scene->propagate_scene_graph(); // TODO: dirty-flag transforms? -> only need to update hierarchy on changes
     scene->update(timeDelta);
-    scene->render();
-    scene->late_update(timeDelta);
+    scene->propagate_scene_graph(); // TODO: dirty-flag transforms? -> only need to update hierarchy on changes
+    scene->render(timeDelta);
+    //scene->late_update(timeDelta);
 
     // Utility for grabbing a screenshot for the various tasks
-    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+    if (glfwGetKey(window, GLFW_KEY_KP_ENTER) == GLFW_PRESS) {
         OK::RawTexture imgGrab = OK::RawTexture(WINDOW_WIDTH, WINDOW_HEIGHT, 4u);
         glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, &imgGrab.pixels[0]);
         GLenum err = glGetError();

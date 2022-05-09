@@ -68,7 +68,7 @@ namespace OK
 
     }
 
-    void Scene::render()
+    void Scene::render(float dt)
     {
         if (main_framebuffer)
         {
@@ -100,6 +100,9 @@ namespace OK
         for (const auto& r : renderers->registered_components) {
             r->render();
         }
+
+        late_update(dt);
+
         if (main_framebuffer)
         {
             main_framebuffer->unbind();
@@ -128,13 +131,32 @@ namespace OK
             }
         }
         float time = getTimeSeconds();
+        /*
+        mat4 projection;
+        mat4 view;
+        mat4 view_projection;
+        mat4 view_inv;
+        mat4 projection_inv;
+        mat4 view_projection_inv;
+        vec4 projection_params;
+        vec4 zbuffer_params;
+        vec4 camera_position;
+        vec4 camera_direction;
+        vec4 time;
+        */
+        glm::mat4 projview = camera->projection_matrix * camera->view_matrix;
+
         auto packed_matrices = OK::pack_data(
             camera->projection_matrix,
             camera->view_matrix,
-            camera->view_projection_matrix(),
-            camera->view_projection_inverse_matrix(),
-            glm::vec4(-camera->transform()->forward(), 1),
-            glm::vec4(camera->near_clip, camera->far_clip, camera->field_of_view, camera->aspect_ratio),
+            projview,
+            glm::inverse(camera->view_matrix),
+            glm::inverse(camera->projection_matrix),
+            glm::inverse(projview),
+            glm::vec4(glm::radians(camera->field_of_view), camera->aspect_ratio, camera->near_clip, camera->far_clip),
+            glm::vec4(camera->near_clip, camera->far_clip, 0, 0),
+            glm::vec4(camera->transform()->position, 1),
+            glm::vec4(-camera->transform()->forward(), 0),
             glm::vec4{ time, time * 2, time * 3, time * 0.05f }
         );
 
