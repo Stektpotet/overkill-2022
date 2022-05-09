@@ -1,4 +1,4 @@
-![Volumetric Clouds](https://i.imgur.com/biMwPf0.gifv)
+![Volumetric Clouds](https://i.imgur.com/VbRPCJn.gif)
 
 # TDT4230 - Graphics and Visualization Final Project
 
