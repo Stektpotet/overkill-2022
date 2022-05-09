@@ -1,4 +1,9 @@
-![Volumetric Clouds](https://i.imgur.com/VbRPCJn.gif)
+
+
+
+https://user-images.githubusercontent.com/2846061/167323010-ac4a7231-8620-4015-94ab-38c7914028d5.mp4
+
+
 
 # TDT4230 - Graphics and Visualization Final Project
 
