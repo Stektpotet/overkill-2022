@@ -25,6 +25,7 @@ namespace OK
     //}; // Which navigation keys are pressed. WASD-QE keys. -> but now IJKL-YH
 
     bool  Input::m_shift{ false };
+    bool  Input::m_ctrl{ false };
 
     bool  Input::m_asciiMap[Input::ASCII_MAP_SIZE]; //keyboard map from ascii value 32 -> 90
 
@@ -50,6 +51,10 @@ namespace OK
             glfwSetWindowShouldClose(window, 1);
             break;
 
+        case GLFW_KEY_LEFT_CONTROL:
+        case GLFW_KEY_RIGHT_CONTROL:
+            m_ctrl = true;
+            break;
         case GLFW_KEY_LEFT_SHIFT:
         case GLFW_KEY_RIGHT_SHIFT:
             m_shift = true;
@@ -120,6 +125,10 @@ namespace OK
         }
         switch (keyCode)
         {
+        case GLFW_KEY_LEFT_CONTROL:
+        case GLFW_KEY_RIGHT_CONTROL:
+            m_ctrl = false;
+            break;
         case GLFW_KEY_LEFT_SHIFT:
         case GLFW_KEY_RIGHT_SHIFT:
             m_shift = false;

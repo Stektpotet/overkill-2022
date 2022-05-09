@@ -77,7 +77,7 @@ namespace OK
         }
 
         void start_scene();
-        void render();
+        void render(float dt);
         void update(float dt);
         void late_update(float dt);
         

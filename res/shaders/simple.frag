@@ -3,7 +3,6 @@
 #define MAX_LIGHTS 16
 #define EPSILON 0.00000000001
 #define SHADOW_CASTER_MAX_DISTANCE 250
-#define eye vec3(view[3])
 
 in layout(location = 0) vec3 world_position;
 in layout(location = 1) vec3 normal;
@@ -32,12 +31,16 @@ layout(std140) uniform OK_Commons{
     mat4 projection;
     mat4 view;
     mat4 view_projection;
+    mat4 view_inv;
+    mat4 projection_inv;
     mat4 view_projection_inv;
-    vec4 cam_direction;
-    vec4 cam_settings;
+    vec4 projection_params;
+    vec4 zbuffer_params;
+    vec4 camera_position;
+    vec4 camera_direction;
     vec4 time;
 };
-#define eye vec3(view[3])
+#define eye vec3(camera_position)
 
 uniform layout(location = 0) mat4 MVP;
 uniform layout(location = 1) mat4 TRS;

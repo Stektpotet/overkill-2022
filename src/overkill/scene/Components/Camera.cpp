@@ -19,16 +19,6 @@ namespace OK
     {
     }
 
-    glm::mat4 Camera::view_projection_matrix()
-    {
-        return projection_matrix * view_matrix;
-    }
-
-    glm::mat4 Camera::view_projection_inverse_matrix()
-    {
-        return glm::inverse(projection_matrix * view_matrix);
-    }
-
     void Camera::move(float dt)
     {
         auto& t = transform();
@@ -51,33 +41,35 @@ namespace OK
         look_dir = glm::normalize(glm::rotate(look_dir, glm::radians(pitch), u));
         t->rotation = glm::quatLookAt(look_dir, glm::vec3{ 0,1,0 });
 
-        float speed = movement_speed * (Input::m_shift ? shift_multiplier : 1);
+        float speed = movement_speed 
+            * (Input::m_shift ? shift_multiplier : 1.0f)
+            * (Input::m_ctrl ? 1.0f / shift_multiplier : 1.0f);
 
         if (Input::getKey(GLFW_KEY_W))
         {
-            t->position -= t->forward() * speed;
+            t->position -= t->forward() * speed * dt;
         }
         else if (Input::getKey(GLFW_KEY_S))
         {
-            t->position += t->forward() * speed;
+            t->position += t->forward() * speed * dt;
         }
 
         if (Input::getKey(GLFW_KEY_D))
         {
-            t->position += t->right() * speed;
+            t->position += t->right() * speed * dt;
         }
         else if (Input::getKey(GLFW_KEY_A))
         {
-            t->position -= t->right() * speed;
+            t->position -= t->right() * speed * dt;
         }
         
         if (Input::getKey(GLFW_KEY_E))
         {
-            t->position += t->up() * speed;
+            t->position += t->up() * speed * dt;
         }
         else if (Input::getKey(GLFW_KEY_Q))
         {
-            t->position -= t->up() * speed;
+            t->position -= t->up() * speed * dt;
         }
 
         
@@ -85,7 +77,12 @@ namespace OK
 
     void Camera::late_update(float delta_time)
     {
-        projection_matrix = glm::perspective(field_of_view, aspect_ratio, near_clip, far_clip);
+        projection_matrix = glm::perspective(glm::radians(field_of_view), aspect_ratio, near_clip, far_clip);
         view_matrix = glm::inverse(transform()->get_trs());
+
+        auto& p = transform()->position;
+        auto& m = view_matrix[3];
+        auto& k = glm::transpose(view_matrix)[3];
+
     }
 }

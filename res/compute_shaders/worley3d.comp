@@ -4,89 +4,338 @@ layout(local_size_x = 1, local_size_y = 1) in;
 
 layout(std430, binding = 0) buffer OK_Voronoi
 {
-    vec3 voronoiPoints[10*10*10];
+    vec4 voronoiPoints[];
 };
-layout(r32f, binding = 1) uniform image3D img_output;
 
-uniform layout(location = 2) vec3 resolution;
-uniform layout(location = 3) int cells_per_axis;
+//struct compute_debug_t
+//{
+////    ivec4 neighbourhood[27];
+////    ivec4 neighbourhood_scaled[27];
+//    int neighbourhood_idx[27];
+//    int pad;
+//
+//    vec4 relation[27];
+//    vec4 closest;
+//    vec4 virtual_points[27];
+//    vec4 voronoi[27];
+//    vec4 cell_pos;
+//};
+//
+//layout(std430, binding = 1) buffer OK_Debug
+//{
+//    compute_debug_t debug_data[];
+//};
+layout(rgba32f, binding = 2) uniform image3D img_output;
 
+uniform layout(location = 2) ivec3 resolution;
+uniform layout(location = 3) ivec3 cells_per_axis;
 
-ivec3 wrapDirection(int p)
+const vec3 cell_offset[26] = {
+    {-1, -1, -1},
+    { 0, -1, -1},
+    { 1, -1, -1},
+    
+    {-1, 0, -1},
+    { 0, 0, -1},
+    { 1, 0, -1},
+    
+    {-1, 1, -1},
+    { 0, 1, -1},
+    { 1, 1, -1},
+    
+    
+    {-1, -1, 0},
+    { 0, -1, 0},
+    { 1, -1, 0},
+    
+    {-1, 0, 0},
+    //center
+    { 1, 0, 0},
+    
+    {-1, 1, 0},
+    { 0, 1, 0},
+    { 1, 1, 0},
+    
+    
+    {-1, -1, 1},
+    { 0, -1, 1},
+    { 1, -1, 1},
+    
+    {-1, 0, 1},
+    { 0, 0, 1},
+    { 1, 0, 1},
+    
+    {-1, 1, 1},
+    { 0, 1, 1},
+    { 1, 1, 1}
+};
+
+int[27] virtual_neighbour_indices(ivec3 c)
 {
-    return ivec3((p + 1) % cells_per_axis, p, ((p - 1) < 0) ? cells_per_axis - 1 : p - 1);
+    ivec3 id = ivec3(gl_GlobalInvocationID.xyz);
+    int index = id.x + id.y * resolution.x + id.z * resolution.x * resolution.y;
+
+    ivec3 p = c - 1; //negative direction neighbour indices
+    ivec3 q = c + 1; //positive direction neighbour indices
+
+    p = p + ivec3(1 - step(0, p)) * cells_per_axis; // wrap negative direction indices
+    q = q % cells_per_axis;                     // wrap positive direction indices
+
+
+//    ivec4 neighbours[27] = {
+//        {p.x, p.y, p.z, 0},
+//        {c.x, p.y, p.z, 0},
+//        {q.x, p.y, p.z, 0},
+//        
+//        {p.x, c.y, p.z, 0},
+//        {c.x, c.y, p.z, 0},
+//        {q.x, c.y, p.z, 0},
+//
+//        {p.x, q.y, p.z, 0},
+//        {c.x, q.y, p.z, 0},
+//        {q.x, q.y, p.z, 0},
+//
+//        
+//        {p.x, p.y, c.z, 0},
+//        {c.x, p.y, c.z, 0},
+//        {q.x, p.y, c.z, 0},
+//        
+//        {p.x, c.y, c.z, 0},
+//          {c.x, c.y, c.z, 0},
+//        {q.x, c.y, c.z, 0},
+//
+//        {p.x, q.y, c.z, 0},
+//        {c.x, q.y, c.z, 0},
+//        {q.x, q.y, c.z, 0},
+//
+//        
+//        {p.x, p.y, q.z, 0},
+//        {c.x, p.y, q.z, 0},
+//        {q.x, p.y, q.z, 0},
+//        
+//        {p.x, c.y, q.z, 0},
+//        {c.x, c.y, q.z, 0},
+//        {q.x, c.y, q.z, 0},
+//
+//        {p.x, q.y, q.z, 0},
+//        {c.x, q.y, q.z, 0},
+//        {q.x, q.y, q.z, 0},
+//    };
+//    debug_data[index].neighbourhood = neighbours;
+
+
+    ivec3 index_offset_scale = {1, cells_per_axis.x, cells_per_axis.x * cells_per_axis.y};
+
+    p = p * index_offset_scale;
+    c = c * index_offset_scale;
+    q = q * index_offset_scale;
+//
+//    ivec4 neighbours_scaled[27] = {
+//        {p.x, p.y, p.z, 0},
+//        {c.x, p.y, p.z, 0},
+//        {q.x, p.y, p.z, 0},
+//        
+//        {p.x, c.y, p.z, 0},
+//        {c.x, c.y, p.z, 0},
+//        {q.x, c.y, p.z, 0},
+//
+//        {p.x, q.y, p.z, 0},
+//        {c.x, q.y, p.z, 0},
+//        {q.x, q.y, p.z, 0},
+//
+//        
+//        {p.x, p.y, c.z, 0},
+//        {c.x, p.y, c.z, 0},
+//        {q.x, p.y, c.z, 0},
+//        
+//        {p.x, c.y, c.z, 0},
+//          {c.x, c.y, c.z, 0},
+//        {q.x, c.y, c.z, 0},
+//
+//        {p.x, q.y, c.z, 0},
+//        {c.x, q.y, c.z, 0},
+//        {q.x, q.y, c.z, 0},
+//
+//        
+//        {p.x, p.y, q.z, 0},
+//        {c.x, p.y, q.z, 0},
+//        {q.x, p.y, q.z, 0},
+//        
+//        {p.x, c.y, q.z, 0},
+//        {c.x, c.y, q.z, 0},
+//        {q.x, c.y, q.z, 0},
+//
+//        {p.x, q.y, q.z, 0},
+//        {c.x, q.y, q.z, 0},
+//        {q.x, q.y, q.z, 0},
+//    };
+//
+//    debug_data[index].neighbourhood_scaled = neighbours_scaled;
+
+    int neighbours_idx[27] = {
+        p.x + p.y + p.z,
+        c.x + p.y + p.z,
+        q.x + p.y + p.z,
+        
+        p.x + c.y + p.z,
+        c.x + c.y + p.z,
+        q.x + c.y + p.z,
+
+        p.x + q.y + p.z,
+        c.x + q.y + p.z,
+        q.x + q.y + p.z,
+
+        p.x + p.y + c.z,
+        c.x + p.y + c.z,
+        q.x + p.y + c.z,
+        
+        p.x + c.y + c.z,
+        c.x + c.y + c.z,  // 13
+        q.x + c.y + c.z,
+
+        p.x + q.y + c.z,
+        c.x + q.y + c.z,
+        q.x + q.y + c.z,
+
+        
+        p.x + p.y + q.z,
+        c.x + p.y + q.z,
+        q.x + p.y + q.z,
+        
+        p.x + c.y + q.z,
+        c.x + c.y + q.z,
+        q.x + c.y + q.z,
+
+        p.x + q.y + q.z,
+        c.x + q.y + q.z,
+        q.x + q.y + q.z,
+    };
+
+
+    return int[27](
+        neighbours_idx[0],  
+        neighbours_idx[1],  
+        neighbours_idx[2], 
+        
+        neighbours_idx[3],  
+        neighbours_idx[4],  
+        neighbours_idx[5],  
+        
+        neighbours_idx[6],  
+        neighbours_idx[7],  
+        neighbours_idx[8],
+
+        
+        neighbours_idx[9],  
+        neighbours_idx[10],  
+        neighbours_idx[11],  
+        
+        neighbours_idx[12],  
+//        neighbours_idx[13], center  
+        neighbours_idx[14],  
+        
+        neighbours_idx[15],  
+        neighbours_idx[16],  
+        neighbours_idx[17],  
+        
+        
+        neighbours_idx[18],  
+        neighbours_idx[19],  
+        neighbours_idx[20],  
+        
+        neighbours_idx[21],  
+        neighbours_idx[22],  
+        neighbours_idx[23],  
+        
+        neighbours_idx[24],  
+        neighbours_idx[25],  
+        neighbours_idx[26],
+        
+        neighbours_idx[13] // center point -> default, hence at an easily distiguishable index
+    );
 }
 
 vec3 worley(in vec3 uvw)
 {
-    ivec3 cell = ivec3(floor(uvw * cells_per_axis));
-    vec3 c_uvw = fract(uvw * cells_per_axis);
+    vec3 cellf;
+    vec3 c_uvw = modf(fract(uvw) * cells_per_axis, cellf);
+    ivec3 cell = ivec3(cellf);
     
-//    // Make the texture wrap around by sampling points from the "neighbours" on the opposite side
-    ivec3 xDir = wrapDirection(cell.x);
-    ivec3 yDir = wrapDirection(cell.y) * cells_per_axis;
-    ivec3 zDir = wrapDirection(cell.z) * cells_per_axis * cells_per_axis;
-//
-    vec3 virtualPoints[26] = {
-        fract(voronoiPoints[xDir.z + yDir.z + zDir.z].xyz * cells_per_axis) + vec3(-1, -1, -1),
-        fract(voronoiPoints[xDir.y + yDir.z + zDir.z].xyz * cells_per_axis) + vec3( 0, -1, -1),
-        fract(voronoiPoints[xDir.x + yDir.z + zDir.z].xyz * cells_per_axis) + vec3( 1, -1, -1),
+    int idx[27] = virtual_neighbour_indices(cell);
 
-        fract(voronoiPoints[xDir.z + yDir.y + zDir.z].xyz * cells_per_axis) + vec3(-1, 0, -1),
-        fract(voronoiPoints[xDir.y + yDir.y + zDir.z].xyz * cells_per_axis) + vec3( 0, 0, -1),
-        fract(voronoiPoints[xDir.x + yDir.y + zDir.z].xyz * cells_per_axis) + vec3( 1, 0, -1),
-
-        fract(voronoiPoints[xDir.z + yDir.x + zDir.z].xyz * cells_per_axis) + vec3(-1, 1, -1),
-        fract(voronoiPoints[xDir.y + yDir.x + zDir.z].xyz * cells_per_axis) + vec3( 0, 1, -1),
-        fract(voronoiPoints[xDir.x + yDir.x + zDir.z].xyz * cells_per_axis) + vec3( 1, 1, -1),
-
-
-        fract(voronoiPoints[xDir.z + yDir.z + zDir.y].xyz * cells_per_axis) + vec3(-1, -1, 0),
-        fract(voronoiPoints[xDir.y + yDir.z + zDir.y].xyz * cells_per_axis) + vec3( 0, -1, 0),
-        fract(voronoiPoints[xDir.x + yDir.z + zDir.y].xyz * cells_per_axis) + vec3( 1, -1, 0),
-
-        fract(voronoiPoints[xDir.z + yDir.y + zDir.y].xyz * cells_per_axis) + vec3(-1, 0, 0),
-        //fract(voronoiPoints[xDir.y + yDir.y + zDir.y] * cells_per_axis),
-        fract(voronoiPoints[xDir.x + yDir.y + zDir.y].xyz * cells_per_axis) + vec3( 1, 0, 0),
-
-        fract(voronoiPoints[xDir.z + yDir.x + zDir.y].xyz * cells_per_axis) + vec3(-1, 1, 0),
-        fract(voronoiPoints[xDir.y + yDir.x + zDir.y].xyz * cells_per_axis) + vec3( 0, 1, 0),
-        fract(voronoiPoints[xDir.x + yDir.x + zDir.y].xyz * cells_per_axis) + vec3( 1, 1, 0),
-
-
-        fract(voronoiPoints[xDir.z + yDir.z + zDir.x].xyz * cells_per_axis) + vec3(-1, -1, 1),
-        fract(voronoiPoints[xDir.y + yDir.z + zDir.x].xyz * cells_per_axis) + vec3( 0, -1, 1),
-        fract(voronoiPoints[xDir.x + yDir.z + zDir.x].xyz * cells_per_axis) + vec3( 1, -1, 1),
-
-        fract(voronoiPoints[xDir.z + yDir.y + zDir.x].xyz * cells_per_axis) + vec3(-1, 0, 1),
-        fract(voronoiPoints[xDir.y + yDir.y + zDir.x].xyz * cells_per_axis) + vec3( 0, 0, 1),
-        fract(voronoiPoints[xDir.x + yDir.y + zDir.x].xyz * cells_per_axis) + vec3( 1, 0, 1),
-
-        fract(voronoiPoints[xDir.z + yDir.x + zDir.x].xyz * cells_per_axis) + vec3(-1, 1, 1),
-        fract(voronoiPoints[xDir.y + yDir.x + zDir.x].xyz * cells_per_axis) + vec3( 0, 1, 1),
-        fract(voronoiPoints[xDir.x + yDir.x + zDir.x].xyz * cells_per_axis) + vec3( 1, 1, 1),
-    };
+    vec3 closest = voronoiPoints[idx[26]].xyz - c_uvw;
     
-    vec3 closest = fract(voronoiPoints[xDir.y + yDir.y + zDir.y].xyz * cells_per_axis) - c_uvw;
     for (uint i = 0; i < 26; i++)
     {
-        vec3 v = virtualPoints[i].xyz - c_uvw;
+        vec3 v = (voronoiPoints[idx[i]].xyz + cell_offset[i]) - c_uvw;
+        
         if (dot(v, v) < dot(closest, closest)) //dot is faster than distance because of sqrt
+        {
             closest = v;
+        }
     }
-
+    
     return closest;
 }
+
+const mat3 rot45 = mat3(
+        0.70710678119, -0.70710678119,0,
+        0.70710678119, 0.70710678119, 0,
+        0, 0, 1) * 
+        mat3(0.70710678119,0, 0.70710678119,
+        0, 1, 0,
+        -0.70710678119, 0, 0.70710678119) * 
+        mat3(1, 0, 0,
+        0, 0.70710678119, -0.70710678119,
+        0, 0.70710678119, 0.70710678119
+        );
+
+#define OCTAVES 4
+
+float fbmd(in vec3 uvw)
+{
+    float value = 0.0;
+    float normalization_factor = 0.0;
+    float scale = 0.5;
+
+    for (int i = 0; i < OCTAVES; i++)
+    {
+        float noise = 1 - (length(worley(uvw)) / length(vec3(1)));
+        value += noise * scale;
+        normalization_factor += scale;
+        uvw *= 2.0;
+        scale *= 0.5;
+    }
+    return value / normalization_factor;
+}
+
 
 void main() {
     // base pixel colour for image
     // get index in global work group i.e x,y position
     ivec3 id = ivec3(gl_GlobalInvocationID.xyz);
-    vec3 uvw = id / resolution;
+    vec3 uvw = vec3(id) / resolution;
   
+    vec3 cell_size = vec3(resolution) / cells_per_axis;
+
+//    vec3 closest_detail = worley(fract(uvw * 1.5));
+//    vec3 closest_detail = fbmd(uvw);
+
     vec3 closest = worley(uvw);
+    vec3 closest_detail = worley(uvw.zxy*12.3333);
 
-    vec3 c = 1 - sqrt(dot(closest, closest)).xxx;
+    float main_component = fbmd(uvw);
+    float noise_component = 1 - (length(closest) / length(vec3(1)));
+    float noise_component2 = 1 - (length(closest_detail) / length(vec3(1)));
 
-    imageStore(img_output, id, vec4(c, 1.0));
+    
+//    if (length(closest) <= 0.025)
+//        c = vec3(1);
+//    else
+//        c = vec3(0);
+//    c = fract(uvw * cells_per_axis);
+    
+
+//    c = (c.x * c.y * c.z).xxx;
+    imageStore(img_output, id, vec4(main_component, noise_component, noise_component2, 1.0));
 }

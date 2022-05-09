@@ -35,7 +35,8 @@ namespace OK
         static float m_cursor_deltaX;
         static float m_sensitivity;
         //static bool m_navKeyPressed[NavigationKey::MAX_KEYS];// Which navigation keys are pressed. WASD-QE keys.
-        static bool m_shift;
+        static bool m_shift; 
+        static bool m_ctrl;
 
         static void OnInputKeyPress(GLFWwindow* window, int keyCode, int scanCode, int mods);
         static void OnInputKeyHold(GLFWwindow* window, int keyCode, int scanCode, int mods);

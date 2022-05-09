@@ -7,18 +7,29 @@ layout(std140) uniform OK_Commons{
     mat4 projection;
     mat4 view;
     mat4 view_projection;
+    mat4 view_inv;
+    mat4 projection_inv;
     mat4 view_projection_inv;
-    vec4 cam_direction;
-    vec4 cam_settings;
+    vec4 projection_params;
+    vec4 zbuffer_params;
+    vec4 camera_position;
+    vec4 camera_direction;
     vec4 time;
 };
-#define eye vec3(view[3])
-
+#define eye vec3(camera_position)
 void main()
 {
     uv = (position + 1) * 0.5;
-    vec4 ray_nds = vec4(uv * 2.0 - 1.0, 0.0, -1.0);
-    vec3 a = normalize((inverse(projection) * ray_nds).xyz);
-    view_direction = (inverse(view) * vec4(a, 0)).xyz;
+    vec2 clip_slice = uv * 2.0 - 1.0;
+    vec4 ray_near = vec4(clip_slice, -1.0, 1.0);
+    vec4 ray_far = vec4(clip_slice, 1.0, 1.0);
+
+    vec4 near_res = view_projection_inv * ray_near;
+    vec4 far_res = view_projection_inv * ray_far;
+
+    near_res /= near_res.w;
+    far_res /= far_res.w;
+    view_direction = vec3(far_res - near_res);
+
     gl_Position = vec4(position, 0.0 , 1.0);
 }
